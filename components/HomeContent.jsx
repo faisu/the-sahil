@@ -1,17 +1,11 @@
+import Pic from './Pic';
+
 // Home page markup. The 3D tower (canvas#stage) stays visible throughout; each section is a
 // brochure-style panel beside it and lib/tour.js highlights the matching part of the model.
 
 const Metro = ({ inv = true }) => <img className={inv ? 'inv' : ''} src="/assets/img/logo-metro.png" alt="Metro Estates" />;
 const Quba = ({ inv = true }) => <img className={inv ? 'inv' : ''} src="/assets/img/logo-quba.png" alt="Quba Groups" />;
 
-function Pic({ name, alt, w, h, className = '', eager = false }) {
-  return (
-    <picture className={className}>
-      <source srcSet={`/assets/img/${name}.webp`} type="image/webp" />
-      <img src={`/assets/img/${name}.jpg`} alt={alt} width={w} height={h} loading={eager ? 'eager' : 'lazy'} decoding="async" />
-    </picture>
-  );
-}
 
 function Support({ name, alt, w, h, caption, tall = false, delay = 'd2' }) {
   return (
@@ -22,10 +16,10 @@ function Support({ name, alt, w, h, caption, tall = false, delay = 'd2' }) {
   );
 }
 
-/** Brochure panel: Metro logo top, content, Quba logo bottom. side = 'left' | 'right'. */
-function Panel({ id, title, nav, side = 'left', wide = false, night = false, children }) {
+/** Brochure panel on the left; the 3D model always occupies the right. */
+function Panel({ id, title, nav, night = false, children }) {
   return (
-    <section id={id} className={`sec split${side === 'right' ? ' right' : ''}${wide ? ' wide' : ''}${night ? ' nightsec' : ''}`} data-title={title} data-nav={nav}>
+    <section id={id} className={`sec split${night ? ' nightsec' : ''}`} data-title={title} data-nav={nav}>
       <div className="panel">
         <div className="logo-top"><Metro /></div>
         <div className="body">{children}</div>
@@ -74,7 +68,7 @@ export default function HomeContent() {
         </Panel>
 
         {/* 03 compare — page 4 left; model: a high floor seen from the sea */}
-        <Panel id="compare" title="Sea view" side="right">
+        <Panel id="compare" title="Sea view">
           <p className="kicker reveal">A view beyond</p>
           <h2 className="display sm reveal d1">Compare</h2>
           <div className="rule reveal d2" />
@@ -84,7 +78,7 @@ export default function HomeContent() {
         </Panel>
 
         {/* 04 location — page 3; model: aerial of the whole tower */}
-        <Panel id="location" title="Location" nav="location" wide>
+        <Panel id="location" title="Location" nav="location">
           <h2 className="loc-title reveal"><small>At the centre of</small>Everything<br /><em>that matters</em></h2>
           <div className="loc-grid">
             <Pic name="map" alt="Map of Mumbai showing The Sahil at Mahim with routes to Coastal Road, BKC, Fort, the airport and Atal Setu" w={1200} h={1252} className="map reveal d1" />
@@ -102,7 +96,7 @@ export default function HomeContent() {
         </Panel>
 
         {/* 05 an entire floor — page 4 right; model: 12th floor sliced */}
-        <section id="floor" className="sec split right" data-title="Entire floor" data-nav="floor">
+        <section id="floor" className="sec split" data-title="Entire floor" data-nav="floor">
           <div className="panel">
             <div className="logo-top"><img src="/assets/img/logo-sahil-mark.png" alt="The Sahil" style={{ height: '56px' }} /></div>
             <div className="body">
@@ -137,7 +131,7 @@ export default function HomeContent() {
         </Panel>
 
         {/* 07–11 interiors — pages 6–10; model: ground floor, then the sliced 12th floor from four sides */}
-        <Panel id="lobby" title="Lobby" side="right">
+        <Panel id="lobby" title="Lobby">
           <p className="kicker reveal">Ground floor · Arrival</p>
           <h2 className="retreat reveal">Lobby Retreat</h2>
           <p className="copy reveal d1">“Luxury is not a place, it’s an experience that begins the moment you step in.” The ground floor is highlighted: decorative entrance lobby, two high-speed lifts and retail along SVS Road.</p>
@@ -151,7 +145,7 @@ export default function HomeContent() {
           <Support name="living" alt="Living and dining room with floor-to-ceiling sea view" w={1600} h={789} caption="Living & dining" />
         </Panel>
 
-        <Panel id="bedroom" title="Bedroom" side="right">
+        <Panel id="bedroom" title="Bedroom">
           <p className="kicker reveal">Private wing · Typical floor</p>
           <h2 className="retreat reveal">Common Bedroom</h2>
           <p className="copy reveal d1">Includes a huge room size, walk-in wardrobe and a sitting area within the bedroom. The model turns to the quiet side of the plate where the bedrooms sit.</p>
@@ -165,7 +159,7 @@ export default function HomeContent() {
           <Support name="kitchen" alt="Curved modular kitchen facing the sea" w={1600} h={1023} caption="Kitchen" />
         </Panel>
 
-        <Panel id="namaz" title="Namaz room" side="right">
+        <Panel id="namaz" title="Namaz room">
           <p className="kicker reveal">East wing · Typical floor</p>
           <h2 className="retreat reveal">Namaz Room</h2>
           <p className="copy reveal d1">A room for prayers, a place of peace, set at the eastern end of the residence.</p>
@@ -185,7 +179,7 @@ export default function HomeContent() {
         </Panel>
 
         {/* 13 terrace gallery — page 15; model: terrace, closer */}
-        <Panel id="gallery" title="Terrace life" side="right">
+        <Panel id="gallery" title="Terrace life">
           <p className="kicker reveal">Amenities on the sky deck</p>
           <div className="support-grid">
             <Support name="terrace" alt="Terrace sit-out at dusk" w={1400} h={899} caption="Terrace View" delay="" />
@@ -197,7 +191,7 @@ export default function HomeContent() {
         </Panel>
 
         {/* 14 amenities — page 14; model: ground floor and street */}
-        <Panel id="amenities" title="Amenities" nav="amenities" wide>
+        <Panel id="amenities" title="Amenities" nav="amenities">
           <h2 className="amen-title reveal">Amenities</h2>
           <h3 className="amen-h reveal">External Amenities</h3>
           <div className="icons">
@@ -222,7 +216,7 @@ export default function HomeContent() {
         </Panel>
 
         {/* 15 night — page 12; model switches to night */}
-        <Panel id="night" title="By night" side="right" night>
+        <Panel id="night" title="By night" night>
           <h2 className="serif reveal" style={{ textAlign: 'center' }}>A Radiant <em>Masterpiece</em><small>on the Skyline</small></h2>
           <p className="copy reveal d1">Crowned by a glowing rooftop sanctuary and rising gracefully above a lush, moonlit landscape, it stands as a striking symbol of prestige — a landmark that doesn’t just touch the sky, but commands it.</p>
           <p className="glow reveal d2">Welcome to a home that shines brighter, day or night.</p>

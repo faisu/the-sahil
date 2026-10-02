@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { preload } from 'react-dom';
 import { initUnits, floorInfo, FLOOR_GROUPS } from '@/lib/units';
 import { MODELS, LEVELS } from '@/lib/scene';
+import Pic from './Pic';
 
 const tagClass = (t) => (/sea/i.test(t) ? 'sea' : /refuge/i.test(t) ? 'refuge' : 'amen');
 const shortNo = (l) => (l === 'T' || l === 'G' || l === 'B' ? l : String(+l.slice(1)));
@@ -100,11 +101,11 @@ export default function UnitsView() {
         <div className="grid">
           <figure>
             <span className="chip">Typical Floor Plan</span>
-            <picture><source srcSet="/assets/img/floor-plan.webp" type="image/webp" /><img src="/assets/img/floor-plan.jpg" alt="Typical 5 BHK floor plan" width="1600" height="667" loading="lazy" decoding="async" /></picture>
+            <Pic name="floor-plan" alt="Typical 5 BHK floor plan" w={1600} h={667} />
           </figure>
           <figure>
             <span className="chip">Isometric View</span>
-            <picture><source srcSet="/assets/img/floor-iso.webp" type="image/webp" /><img src="/assets/img/floor-iso.jpg" alt="Isometric cutaway of the 5 BHK residence" width="1600" height="681" loading="lazy" decoding="async" /></picture>
+            <Pic name="floor-iso" alt="Isometric cutaway of the 5 BHK residence" w={1600} h={681} />
           </figure>
         </div>
       </section>
