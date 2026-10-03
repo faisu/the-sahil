@@ -1,4 +1,5 @@
 import Pic from './Pic';
+import MapControls from './MapControls';
 
 // Home page markup. The 3D tower (canvas#stage) stays visible throughout; each section is a
 // brochure-style panel beside it and lib/tour.js highlights the matching part of the model.
@@ -7,16 +8,16 @@ const Metro = ({ inv = true }) => <img className={inv ? 'inv' : ''} src="/assets
 const Quba = ({ inv = true }) => <img className={inv ? 'inv' : ''} src="/assets/img/logo-quba.png" alt="Quba Groups" />;
 
 
-function Support({ name, alt, w, h, caption, tall = false, delay = 'd2' }) {
+function Support({ name, alt, w, h, caption, tall = false, delay = 'd2', view }) {
   return (
-    <figure className={`support reveal ${delay}${tall ? ' tall' : ''}`}>
+    <figure className={`support reveal ${delay}${tall ? ' tall' : ''}`} data-view={view} title={view ? 'Shows this on the 3D model' : undefined}>
       <Pic name={name} alt={alt} w={w} h={h} />
       {caption && <figcaption>{caption}</figcaption>}
     </figure>
   );
 }
 
-/** Brochure panel on the left; the 3D model always occupies the right. */
+/** Brochure panel on the left; the map stage with the 3D tower always occupies the right. */
 function Panel({ id, title, nav, night = false, children }) {
   return (
     <section id={id} className={`sec split${night ? ' nightsec' : ''}`} data-title={title} data-nav={nav}>
@@ -36,7 +37,7 @@ export default function HomeContent() {
       <div className="load-note">Loading 3D model</div>
       <div className="stage-bg-night" />
       <div className="stage-bg" />
-      <canvas id="stage" className="stage" aria-label="3D model of The Sahil tower" />
+      <div id="stage" className="stage" role="img" aria-label="Street map of Mahim with the 3D model of The Sahil on its plot beside the Arabian Sea" />
       <div className="hint">Scroll to tour the tower</div>
       <aside className="rail" aria-label="Sections" />
 
@@ -77,21 +78,24 @@ export default function HomeContent() {
           <Support name="sea-view" alt="Sunset over the Arabian Sea from a Sahil balcony" w={1400} h={1040} caption="Horizons that belong to you" />
         </Panel>
 
-        {/* 04 location — page 3; model: aerial of the whole tower */}
+        {/* 04 location — page 3; the map pulls back to show the plot with the sea behind it */}
         <Panel id="location" title="Location" nav="location">
           <h2 className="loc-title reveal"><small>At the centre of</small>Everything<br /><em>that matters</em></h2>
+          <p className="copy reveal d1">122/124 SVS Road, Mahim: the plot sits on the seaward side of the old Cadell Road, a few hundred metres from Mahim Bay. The tower stands on its plot throughout the tour; pick a view or a destination to explore the map.</p>
+          <MapControls />
           <div className="loc-grid">
-            <Pic name="map" alt="Map of Mumbai showing The Sahil at Mahim with routes to Coastal Road, BKC, Fort, the airport and Atal Setu" w={1200} h={1252} className="map reveal d1" />
-            <ul className="rings">
-              <li className="reveal"><b>8</b> Mins To Coastal Road</li>
-              <li className="reveal d1"><b>13</b> Mins To Worli Connector</li>
-              <li className="reveal d1"><b>14</b> Mins To CSMI Airport</li>
-              <li className="reveal d2"><b>15</b> Mins To BKC</li>
-              <li className="reveal d2"><b>20</b> Mins To Versova</li>
-              <li className="reveal d3"><b>23</b> Mins To Atal Setu (via Worli Connector)</li>
-              <li className="reveal d3"><b>28</b> Mins To Fort</li>
-              <li className="reveal d3"><b>30</b> Mins To Nariman Point</li>
+            <Pic name="map" alt="Map of Mumbai showing The Sahil at Mahim with routes to Coastal Road, BKC, Fort, the airport and Atal Setu" w={1200} h={1252} className="map reveal d1 small" />
+            <ul className="rings dests" aria-label="Drive times (click to show on the map)">
+              <li className="reveal"><button type="button" data-dest="coastal"><b>8</b> Mins To Coastal Road</button></li>
+              <li className="reveal d1"><button type="button" data-dest="worli"><b>13</b> Mins To Worli Connector</button></li>
+              <li className="reveal d1"><button type="button" data-dest="airport"><b>14</b> Mins To CSMI Airport</button></li>
+              <li className="reveal d2"><button type="button" data-dest="bkc"><b>15</b> Mins To BKC</button></li>
+              <li className="reveal d2"><button type="button" data-dest="versova"><b>20</b> Mins To Versova</button></li>
+              <li className="reveal d3"><button type="button" data-dest="atalsetu"><b>23</b> Mins To Atal Setu (via Worli Connector)</button></li>
+              <li className="reveal d3"><button type="button" data-dest="fort"><b>28</b> Mins To Fort</button></li>
+              <li className="reveal d3"><button type="button" data-dest="nariman"><b>30</b> Mins To Nariman Point</button></li>
             </ul>
+            <p className="fine reveal d3" style={{ marginTop: '.4rem' }}>Tap a destination to see it from the plot on the map; scroll on to continue the tour.</p>
           </div>
         </Panel>
 
@@ -182,12 +186,12 @@ export default function HomeContent() {
         <Panel id="gallery" title="Terrace life">
           <p className="kicker reveal">Amenities on the sky deck</p>
           <div className="support-grid">
-            <Support name="terrace" alt="Terrace sit-out at dusk" w={1400} h={899} caption="Terrace View" delay="" />
-            <Support name="gym" alt="Fitness centre" w={1400} h={775} caption="Fitness Center" delay="d1" />
-            <Support name="pool" alt="Rooftop swimming pool" w={1400} h={911} caption="Swimming Pool" delay="d2" />
-            <Support name="cafe" alt="Terrace cafeteria" w={1400} h={875} caption="Terrace Cafeteria" delay="d3" />
+            <Support name="terrace" alt="Terrace sit-out at dusk" w={1400} h={899} caption="Terrace View" delay="" view="terrace" />
+            <Support name="gym" alt="Fitness centre" w={1400} h={775} caption="Fitness Center" delay="d1" view="gym" />
+            <Support name="pool" alt="Rooftop swimming pool" w={1400} h={911} caption="Swimming Pool" delay="d2" view="pool" />
+            <Support name="cafe" alt="Terrace cafeteria" w={1400} h={875} caption="Terrace Cafeteria" delay="d3" view="cafe" />
           </div>
-          <p className="copy reveal d3">The fitness centre sits on the 3rd floor; pool, cafeteria and deck crown the terrace.</p>
+          <p className="copy reveal d3">The fitness centre sits on the 3rd floor; pool, cafeteria and deck crown the terrace. Hover or tap a picture to zoom the model to it.</p>
         </Panel>
 
         {/* 14 amenities — page 14; model: ground floor and street */}
@@ -195,12 +199,12 @@ export default function HomeContent() {
           <h2 className="amen-title reveal">Amenities</h2>
           <h3 className="amen-h reveal">External Amenities</h3>
           <div className="icons">
-            <div className="reveal"><img src="/assets/img/ic-lobby.png" alt="" loading="lazy" />Decorative<br />Entrance Lobby</div>
-            <div className="reveal d1"><img src="/assets/img/ic-lift.png" alt="" loading="lazy" />High-Speed<br />Elevators</div>
-            <div className="reveal d2"><img src="/assets/img/ic-cctv.png" alt="" loading="lazy" />24 × 7 CCTV<br />Surveillance</div>
-            <div className="reveal"><img src="/assets/img/ic-garden.png" alt="" loading="lazy" />Roof Top Garden</div>
-            <div className="reveal d1"><img src="/assets/img/ic-sitout.png" alt="" loading="lazy" />Sit-Out Space</div>
-            <div className="reveal d2"><img src="/assets/img/ic-kitchen.png" alt="" loading="lazy" />Modular Kitchen</div>
+            <div className="reveal" data-view="lobby"><img src="/assets/img/ic-lobby.png" alt="" loading="lazy" />Decorative<br />Entrance Lobby</div>
+            <div className="reveal d1" data-view="lifts"><img src="/assets/img/ic-lift.png" alt="" loading="lazy" />High-Speed<br />Elevators</div>
+            <div className="reveal d2" data-view="cctv"><img src="/assets/img/ic-cctv.png" alt="" loading="lazy" />24 × 7 CCTV<br />Surveillance</div>
+            <div className="reveal" data-view="garden"><img src="/assets/img/ic-garden.png" alt="" loading="lazy" />Roof Top Garden</div>
+            <div className="reveal d1" data-view="sitout"><img src="/assets/img/ic-sitout.png" alt="" loading="lazy" />Sit-Out Space</div>
+            <div className="reveal d2" data-view="kitchen"><img src="/assets/img/ic-kitchen.png" alt="" loading="lazy" />Modular Kitchen</div>
           </div>
           <h3 className="amen-h reveal">Internal Amenities</h3>
           <ul className="stars">
