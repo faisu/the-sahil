@@ -74,7 +74,7 @@ export default function HomeContent() {
           <h2 className="display sm reveal d1">Compare</h2>
           <div className="rule reveal d2" />
           <p className="tagline kicker reveal d2" style={{ letterSpacing: '.2em' }}>The finest sea view on the Arabian Sea coast</p>
-          <p className="copy reveal d2">Horizons that belong to you. The 20th floor is highlighted on the model, seen from the water: every residence opens to the sea through the curved, column-free glass bay.</p>
+          <p className="copy reveal d2">Horizons that belong to you. The 20th floor is highlighted on the model, with Mahim Bay beside it: every residence looks out over the water through the curved, column-free glass bay.</p>
           <Support name="sea-view" alt="Sunset over the Arabian Sea from a Sahil balcony" w={1400} h={1040} caption="Horizons that belong to you" />
         </Panel>
 

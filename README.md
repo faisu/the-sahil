@@ -21,10 +21,19 @@ from the same metre-based cam/look keyframes the three.js viewer used (converted
 `map.calculateCameraOptionsFromTo`), so each section is demonstrated on the real plot with Mahim
 Bay in view. Knobs in `lib/map.js`:
 
-- `SITE` — plot lng/lat (122/124 SVS Road, seaward side of the road; indicative).
-- `SEA_BEARING` — compass bearing the curved sea-facing bay points to (the GLB's +Z side).
+- `SITE` — plot centre lng/lat (19.038245, 72.839001; 122/124 SVS Road, seaward side of the road).
+- `MODEL_BEARING` — compass bearing of the GLB's +Z side (curved bay). 192° lays the long axis
+  along the plot, running back from SVS Road towards the sea (+X points east to the road, 102°).
+- `SEA_BEARING` — bearing from the plot to Mahim Bay, used by the camera presets.
 - `VIEWS` — camera presets for the chips in the Location panel (plot, from the sea, shoreline, neighbourhood, Mumbai).
 - `DESTINATIONS` — the brochure drive-time places; the list in the panel flies the map to each one.
+
+The tower's look follows the brochure renders: `lib/scene.js` wraps each floor in a generated
+façade skin (white slab-edge bands, bronze-tinted curtain glazing, white rooftop crown and a
+rooftop pool) built from that floor's outline, and hides it on a floor while that floor is sliced
+open. The map layer passes three.js the real eye position (from MapLibre's camera), so glass
+reflections and highlights are physically placed. 3D neighbour extrusions are removed (they
+overlapped the tower); flat footprints are drawn at street zooms instead.
 
 Picking a chip or a destination pauses the scroll keyframes ("back to the tour" or scrolling to
 the next section resumes them). Figures and icons with `data-view` (gallery pictures, amenity
