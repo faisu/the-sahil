@@ -1,5 +1,5 @@
 """Split the Sayyed House GLB into per-floor nodes so the website can isolate,
-explode and highlight single floors. Output: website/public/assets/models/sahil_floors.glb
+explode and highlight single floors. Output: website/private/models/sahil_floors.glb
 (uncompressed; compress afterwards with gltf-transform).
 
 Node naming: <LEVEL>_<Category>, LEVEL in {B (basement), G (ground), F01..F22, T (terrace)}.
@@ -8,8 +8,8 @@ import json, sys
 import numpy as np, trimesh
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '../sayyed_house_full.glb'   # source model (kept outside the web repo)
-OUT_CORE = 'public/assets/models/sahil_core.glb'      # exterior shell, loaded first
-OUT_DETAIL = 'public/assets/models/sahil_detail.glb'  # interiors / structure, loaded when idle
+OUT_CORE = 'private/models/sahil_core.glb'      # exterior shell, loaded first
+OUT_DETAIL = 'private/models/sahil_detail.glb'  # interiors / structure, loaded when idle
 CORE = {'ArchWalls', 'Glass', 'WindowFrames', 'Chajja', 'Slabs', 'Parapets', 'Terrace',
         'TerraceWalls', 'TerraceCore', 'OverheadTank', 'LMR', 'Plot', 'Water'}
 spec = json.load(open(sys.argv[2] if len(sys.argv) > 2 else '../building_spec.json'))

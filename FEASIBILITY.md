@@ -20,7 +20,7 @@ Metro Estates logo top-left and Quba logo bottom-left on every panel.
 ## Asset pipeline (reproducible)
 
 ```
-tools/split_floors.py     sayyed_house_full.glb -> public/assets/models/sahil_core.glb + sahil_detail.glb
+tools/split_floors.py     sayyed_house_full.glb -> private/models/sahil_core.glb + sahil_detail.glb
                           (per-floor nodes B, G, F01..F22, T; full-height core walls cut at floor planes)
 gltf-transform optimize   meshopt compression, no instancing (keeps one mesh per floor)
 PyMuPDF + ImageMagick     brochure pages rendered at 2000 px, renders cropped, WebP + JPEG, logos trimmed

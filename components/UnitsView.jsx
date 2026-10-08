@@ -1,8 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import { preload } from 'react-dom';
 import { initUnits, floorInfo, FLOOR_GROUPS } from '@/lib/units';
-import { MODELS, LEVELS } from '@/lib/scene';
+import { LEVELS } from '@/lib/scene';
 import Pic from './Pic';
 
 const tagClass = (t) => (/sea/i.test(t) ? 'sea' : /refuge/i.test(t) ? 'refuge' : 'amen');
@@ -37,7 +36,6 @@ function FloorCard({ level }) {
 }
 
 export default function UnitsView() {
-  preload(MODELS.core, { as: 'fetch', crossOrigin: 'anonymous' });
   const root = useRef(null);
   useEffect(() => initUnits(root.current), []);
   const residenceFloors = LEVELS.filter((l) => /^F/.test(l)).length;
