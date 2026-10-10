@@ -6,47 +6,47 @@ Next.js 15 (App Router) site for The Sahil, Mahim. Deploys to Vercel with no con
 app/page.jsx            scroll tour (home)           components/Tour.jsx + lib/tour.js
 app/units/page.jsx      flat units overview          components/UnitsView.jsx + lib/units.js
 lib/scene.js            createBuilding (per-floor GLB loading, focus/slice/explode/night state) + createViewer (three.js canvas for /units)
-lib/map.js              createMapStage: MapLibre map of Mahim with the tower on its plot, driven by the tour  components/MapControls.jsx
+lib/stage.js            createTowerStage: full-screen three.js scene for the home tour (lighting, shadows, reflections, drag to look)
+lib/world.js            procedural setting: sky, sea and beach, streets, neighbours, palms, trees, cars
+lib/map.js              createMapStage: MapLibre map of Mahim in the Location panel  components/MapControls.jsx
 app/globals.css         brochure design system
 private/models          sahil_core.glb (exterior, 492 KB) + sahil_detail.glb (interiors, 280 KB), meshopt-compressed, served only via app/api/scene
 public/assets/img       brochure renders (WebP + JPEG), logos, icons
 ```
 
-## Map stage
+## 3D stage
 
-The home page stage is a MapLibre GL map (OpenFreeMap "liberty" style, no API key) that stays
-fixed behind every section. A three.js custom layer renders `sahil_core.glb` on the plot the way
-the MapLibre "Add a 3D model using three.js" example does, and `lib/tour.js` drives the map camera
-from the same metre-based cam/look keyframes the three.js viewer used (converted with
-`map.calculateCameraOptionsFromTo`), so each section is demonstrated on the real plot with Mahim
-Bay in view. Knobs in `lib/map.js`:
+The home page stage (`lib/stage.js`) is a full-screen three.js scene that stays behind every
+section: the tower from `lib/scene.js` in a procedural setting from `lib/world.js` — a sky dome
+with clouds (stars at night), Mahim Bay with surf and a sand beach to the west, SVS Road, the
+cross street and the street that runs up to the south face, low-rise neighbours, palms, trees and
+cars. A low warm sun from the sea side, soft shadows and sky reflections in the glass follow the
+brochure renders (`tower-day`, `aerial`, `rooftop-aerial`, `tower-night`). The façade skin has a
+roughness/metalness mask so the glass mirrors the sky while the bronze frames stay satin.
+
+`lib/tour.js` drives the camera from scroll with metre-based keyframes (`KEYS`): street level up to
+the south face (cover, as in the day render), the brochure aerial, the 20th-floor sea bay, a
+pulled-back view of the plot and the bay, the sliced 12th floor and its rooms, the rooftop pool
+and deck, the entrance off SVS Road and the night crown. Each keyframe can pin a **callout** to
+the part of the tower in view; the floor in focus gets a glowing outline instead of ghosting the
+rest of the tower, and neighbours/trees fade back for the cut-aways. Visitors can **drag** (or
+swipe sideways on a phone) to look around; the view eases back to the framed shot on the next
+section. Figures and icons with `data-view` zoom the model to that amenity (`VIEWS`).
+
+**Phones:** the first screen is the tower full-bleed under the title; scrolling folds the stage
+into a strip under the nav (a clip-path, so the canvas never resizes) and the tour panels run
+beneath it, each one re-framing the model in the strip.
+
+## Location map
+
+The Location panel carries its own MapLibre map (`lib/map.js`, created when the panel comes near):
+OpenFreeMap "liberty" style, the tower on its plot through a three.js custom layer, cooperative
+gestures so the wheel keeps scrolling the page. Knobs in `lib/map.js`:
 
 - `SITE` — plot centre lng/lat (19.038245, 72.839001; 122/124 SVS Road, seaward side of the road).
-- `MODEL_BEARING` — compass bearing of the GLB's +Z side (curved bay). 192° lays the long axis
-  along the plot, running back from SVS Road towards the sea (+X points east to the road, 102°).
-- `SEA_BEARING` — bearing from the plot to Mahim Bay, used by the camera presets.
-- `VIEWS` — camera presets for the chips in the Location panel (plot, from the sea, shoreline, neighbourhood, Mumbai).
+- `MODEL_BEARING` — compass bearing of the GLB's +Z side (curved bay).
+- `VIEWS` — camera presets for the chips (plot, from the sea, shoreline, neighbourhood, Mumbai).
 - `DESTINATIONS` — the brochure drive-time places; the list in the panel flies the map to each one.
-
-The tower's exterior follows the brochure renders (`tower-day`, `tower-night`, `aerial`,
-`rooftop-aerial`): `lib/scene.js` builds a façade skin from one clean outline of the typical floor
-plate (`OUTLINE`: straight road-side face and ends, the R ≈ 8.7 / 10 m curved corners and the flat
-south face between them). Each floor gets a white slab-edge band (deep balcony bands on the curves),
-bronze cladding with a window grid on the flat faces, full-height glass bays in rounded bronze
-frames on the curves (open bays on the 7th/14th refuge floors), white pilasters where the curves
-meet the flat faces and shopfront glazing on the podium. The roof gets the white crown: fascia with
-"The Sahil" lettering, louvred parapet and the taller louvred screen sweeping down over the curves,
-the logo panel, the pool in the east curve and planting. Façade patterns are canvas textures with
-night emissive maps (lit and unlit homes, warm and cool). The skin hides on a floor while that floor
-is sliced open; the drawn rooftop walls show only then. The map layer passes three.js the real eye
-position (from MapLibre's camera), so glass reflections and highlights are physically placed. 3D
-neighbour extrusions are removed (they overlapped the tower); flat footprints are drawn at street
-zooms instead.
-
-Picking a chip or a destination pauses the scroll keyframes ("back to the tour" or scrolling to
-the next section resumes them). Figures and icons with `data-view` (gallery pictures, amenity
-icons) zoom the model to that amenity on hover, focus or tap; the presets live in `VIEWS` inside
-`lib/tour.js`. Night mode dims the basemap with a CSS filter on the stage and lights the glass.
 
 ## Visitors, model protection and plan notice
 

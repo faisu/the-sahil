@@ -1,8 +1,8 @@
 import Pic from './Pic';
 import MapControls from './MapControls';
 
-// Home page markup. The 3D tower (canvas#stage) stays visible throughout; each section is a
-// brochure-style panel beside it and lib/tour.js highlights the matching part of the model.
+// Home page markup. The 3D tower (#stage) stays visible throughout; each section is a
+// brochure-style panel beside it and lib/tour.js frames the matching part of the model.
 
 const Metro = ({ inv = true }) => <img className={inv ? 'inv' : ''} src="/assets/img/logo-metro.png" alt="Metro Estates" />;
 const Quba = ({ inv = true }) => <img className={inv ? 'inv' : ''} src="/assets/img/logo-quba.png" alt="Quba Groups" />;
@@ -17,7 +17,7 @@ function Support({ name, alt, w, h, caption, tall = false, delay = 'd2', view })
   );
 }
 
-/** Brochure panel on the left; the map stage with the 3D tower always occupies the right. */
+/** Brochure panel on the left; the 3D stage with the tower always occupies the right. */
 function Panel({ id, title, nav, night = false, children }) {
   return (
     <section id={id} className={`sec split${night ? ' nightsec' : ''}`} data-title={title} data-nav={nav}>
@@ -35,10 +35,9 @@ export default function HomeContent() {
     <>
       <div className="loader"><i /></div>
       <div className="load-note">Loading 3D model</div>
-      <div className="stage-bg-night" />
-      <div className="stage-bg" />
-      <div id="stage" className="stage" role="img" aria-label="Street map of Mahim with the 3D model of The Sahil on its plot beside the Arabian Sea" />
-      <div className="hint">Scroll to tour the tower</div>
+      <div id="stage" className="stage" role="img" aria-label="3D model of The Sahil on SVS Road, Mahim, beside the Arabian Sea. Drag to look around." />
+      <div className="callout" aria-hidden="true"><i /><span /></div>
+      <div className="hint"><span className="h-drag">Drag to look around</span><span className="h-swipe">Swipe sideways to turn the tower</span><span className="h-scroll">Scroll to tour</span></div>
       <aside className="rail" aria-label="Sections" />
 
       <main>
@@ -46,11 +45,16 @@ export default function HomeContent() {
         <section id="cover" className="sec cover" data-title="The Sahil">
           <div className="inner">
             <img className="mark reveal" src="/assets/img/logo-sahil-mark.png" alt="The Sahil" width="400" height="302" />
-            <p className="tag reveal d1">Luxury Begins Here</p>
-            <p className="where reveal d2">Mahim · Mumbai · Sea-facing residences</p>
+            <h1 className="hero reveal d1">Luxury<br /><em>begins here</em></h1>
+            <p className="where reveal d2">Exclusive 5 BHK sea-facing residences · Mahim, Mumbai</p>
+            <ul className="facts reveal d2" aria-label="At a glance">
+              <li><b>22</b>storeys</li>
+              <li><b>1</b>flat per floor</li>
+              <li><b>69 m</b>above the bay</li>
+            </ul>
             <div className="by reveal d3"><Metro inv={false} /><Quba inv={false} /></div>
           </div>
-          <div className="cue">Scroll <i /></div>
+          <a className="cue" href="#intro">Take the tour <i /></a>
         </section>
 
         {/* 02 overview — page 2 */}
@@ -78,10 +82,11 @@ export default function HomeContent() {
           <Support name="sea-view" alt="Sunset over the Arabian Sea from a Sahil balcony" w={1400} h={1040} caption="Horizons that belong to you" />
         </Panel>
 
-        {/* 04 location — page 3; the map pulls back to show the plot with the sea behind it */}
+        {/* 04 location — page 3; the 3D view pulls back to the plot and the bay, the panel carries a live map */}
         <Panel id="location" title="Location" nav="location">
           <h2 className="loc-title reveal"><small>At the centre of</small>Everything<br /><em>that matters</em></h2>
-          <p className="copy reveal d1">122/124 SVS Road, Mahim: the plot sits on the seaward side of the old Cadell Road, a few hundred metres from Mahim Bay. The tower stands on its plot throughout the tour; pick a view or a destination to explore the map.</p>
+          <p className="copy reveal d1">122/124 SVS Road, Mahim: the plot sits on the seaward side of the old Cadell Road, a few hundred metres from Mahim Bay. The 3D view behind shows the plot from above with the beach and Mahim Bay; the map below places it in the city. Pick a view or a destination to explore.</p>
+          <div className="loc-map reveal d1" id="locmap" aria-label="Map of Mahim with The Sahil on its plot"><p className="loc-map-hint">Ctrl / two fingers to zoom · drag to pan</p></div>
           <MapControls />
           <div className="loc-grid">
             <Pic name="map" alt="Map of Mumbai showing The Sahil at Mahim with routes to Coastal Road, BKC, Fort, the airport and Atal Setu" w={1200} h={1252} className="map reveal d1 small" />
