@@ -59,9 +59,10 @@ the 492 KB shell model. Everything else is lazy.
    the structural drawing R0 (06-07-26) and the brochure; the badges are placeholder demo data.
    Confirm the unit mix (the drawing marks rehab allocations on several floors) and connect the
    CRM for live availability.
-4. **Model fidelity.** The 3D tower is a structural/architectural extraction, not the visualiser's
-   facade model (no fins, planters or signage). Options: dress the GLB with the facade from the
-   architect's Revit/SketchUp model, or keep the clean "working model" look and present it as such.
+4. **Model fidelity.** The tower's façade, crown and interiors are generated from the structural
+   extraction plus the brochure (procedural skin, PBR surfaces and CC0 furniture; see README
+   "Furnished interiors"). The visualiser's own Revit/SketchUp model would still be the closest
+   match for the façade details and could replace the generated skin.
 5. **Fonts.** The brochure uses a Gill Sans-style face; the site uses Jost + Cormorant Garamond
    from Google Fonts to avoid licensing. Swap in the brand font if licensed.
 6. **Lead capture.** Enquire links are `mailto:`; a form posting to the CRM (or a serverless

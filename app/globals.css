@@ -41,11 +41,28 @@ p{margin:0}
 @media (max-width:900px){.nav ul{display:none}.nav .partners{display:none}}
 
 /* ---------- 3D stage ---------- */
-.stage{position:fixed;inset:0;width:100%;height:100%;z-index:0;opacity:0;transition:opacity 1s var(--ease);touch-action:pan-y;cursor:grab;background:#cfe0ee;
+.stage{position:fixed;inset:0;width:100%;height:100%;z-index:0;opacity:0;transition:opacity .25s linear;touch-action:pan-y;cursor:grab;background:#cfe0ee;
   -webkit-user-select:none;user-select:none}
 .stage.dragging{cursor:grabbing}
 .stage.ready{opacity:1}
 .stage-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* the real map under the 3D stage: tour.js cross-fades the two */
+.map-stage,.map-stage.maplibregl-map{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;cursor:default;pointer-events:none;background:#dfe6e9}
+.map-stage .maplibregl-canvas{outline:none}
+.map-stage .maplibregl-ctrl-attrib{font-size:.58rem;pointer-events:auto}
+.map-stage .maplibregl-ctrl-bottom-right{right:auto;left:0}
+.on-map .hint{opacity:0}
+/* tour step label beside the panel logo */
+.panel>.logo-top{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.step{font-size:.6rem;letter-spacing:.28em;text-transform:uppercase;color:var(--blue);white-space:nowrap}
+.night .step{color:#8fb8ff}
+/* plan legend and amenity chips (they move the camera to the amenity) */
+.legend{list-style:none;margin:0;padding:0;display:grid;gap:.6rem;font-size:.9rem;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:.7rem;vertical-align:-2px}
+.legend .wood{background:#a77b52}.legend .marble{background:#e9dfcf;box-shadow:inset 0 0 0 1px #cbbfa9}.legend .stone{background:#4a4a4c}.legend .carpet{background:#5c5a62}
+.chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.5rem}
+.chips li{border:1px solid var(--line);border-radius:999px;padding:.45rem .95rem;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);background:rgba(255,255,255,.35)}
+.chips li[data-view-active]{background:var(--blue);color:#fff;border-color:var(--blue)}
 .night .stage{background:var(--night)}
 
 /* callout pinned to the part of the tower in view */
@@ -92,7 +109,7 @@ main .panel,main .footer,main .cover .inner,main .cue{pointer-events:auto}
 .logos .quba{height:30px}
 
 /* split layout = beige brochure column + 3D showing through */
-.split{display:grid;grid-template-columns:minmax(320px,40%) 1fr}
+.split{display:grid;grid-template-columns:minmax(320px,34%) 1fr}
 .split.right{grid-template-columns:1fr minmax(300px,40%)}
 .split.right .panel{grid-column:2}
 .panel{position:relative;background:var(--grain),var(--paper);padding:calc(var(--nav-h) + 3rem) clamp(28px,4vw,64px) 3rem;display:flex;flex-direction:column;justify-content:space-between;gap:3rem;min-height:100vh;min-height:100svh;

@@ -8,40 +8,68 @@ app/units/page.jsx      flat units overview          components/UnitsView.jsx + 
 lib/scene.js            createBuilding (per-floor GLB loading, focus/slice/explode/night state) + createViewer (three.js canvas for /units)
 lib/stage.js            createTowerStage: full-screen three.js scene for the home tour (lighting, shadows, reflections, drag to look)
 lib/world.js            procedural setting: sky, sea and beach, streets, neighbours, palms, trees, cars
-lib/map.js              createMapStage: MapLibre map of Mahim in the Location panel  components/MapControls.jsx
+lib/interiors.js        furnished interiors (residence, lobby, gym, rooftop) after the brochure
+lib/map.js              createMapStage: MapLibre map of Mahim with the tower, the exterior half of the tour  components/MapControls.jsx
 app/globals.css         brochure design system
 private/models          sahil_core.glb (exterior, 492 KB) + sahil_detail.glb (interiors, 280 KB), meshopt-compressed, served only via app/api/scene
 public/assets/img       brochure renders (WebP + JPEG), logos, icons
 ```
 
-## 3D stage
+## Virtual tour
 
-The home page stage (`lib/stage.js`) is a full-screen three.js scene that stays behind every
-section: the tower from `lib/scene.js` in a procedural setting from `lib/world.js` — a sky dome
-with clouds (stars at night), Mahim Bay with surf and a sand beach to the west, SVS Road, the
-cross street and the street that runs up to the south face, low-rise neighbours, palms, trees and
-cars. A low warm sun from the sea side, soft shadows and sky reflections in the glass follow the
-brochure renders (`tower-day`, `aerial`, `rooftop-aerial`, `tower-night`). The façade skin has a
-roughness/metalness mask so the glass mirrors the sky while the bronze frames stay satin.
+The home page is a scroll-driven virtual tour with no pictures: every view is the 3D model.
+Two stages share one camera path in the model's metre frame and cross-fade as you scroll
+(`lib/tour.js`, `KEYS`, each with `mode: 'map' | '3d'`):
 
-`lib/tour.js` drives the camera from scroll with metre-based keyframes (`KEYS`): street level up to
-the south face (cover, as in the day render), the brochure aerial, the 20th-floor sea bay, a
-pulled-back view of the plot and the bay, the sliced 12th floor and its rooms, the rooftop pool
-and deck, the entrance off SVS Road and the night crown. Each keyframe can pin a **callout** to
-the part of the tower in view; the floor in focus gets a glowing outline instead of ghosting the
-rest of the tower, and neighbours/trees fade back for the cut-aways. Visitors can **drag** (or
-swipe sideways on a phone) to look around; the view eases back to the framed shot on the next
-section. Figures and icons with `data-view` zoom the model to that amenity (`VIEWS`).
+- **The real map** (`lib/map.js`): MapLibre with the tower on its plot for arrival, the aerial,
+  the sea view, the location (chips and drive times fly the map), the street and the night view.
+- **The 3D world** (`lib/stage.js` + `lib/world.js`): the tower in a procedural setting for the
+  lobby, the cut-away 12th floor and its plan, an eye-level walk through the residence (living
+  and dining, kitchen, master bedroom, namaz room), the 3rd-floor gym and the rooftop (pool, café,
+  sit-out). Eye-level keyframes (`walk: true`) glide in straight lines with a wider lens; dragging
+  turns the head. Changing floors, the camera steps out through the glass and back in.
 
-**Phones:** the first screen is the tower full-bleed under the title; scrolling folds the stage
-into a strip under the nav (a clip-path, so the canvas never resizes) and the tour panels run
-beneath it, each one re-framing the model in the strip.
+### Furnished interiors
 
-## Location map
+`lib/interiors.js` furnishes the floors after the brochure renders and plan. The brochure floor
+plan registers exactly with the model (stair core and lift shafts coincide), so positions are
+read off the plan in pixels (`X()/Z()`). The structural model's own partitions differ from the
+brochure layout, so a furnished floor hides them (`REPLACED_CATS`) and draws the plan's walls,
+floors, ceilings (timber panels, LED coves, downlights) and glazing instead.
 
-The Location panel carries its own MapLibre map (`lib/map.js`, created when the panel comes near):
-OpenFreeMap "liberty" style, the tower on its plot through a three.js custom layer, cooperative
-gestures so the wheel keeps scrolling the page. Knobs in `lib/map.js`:
+- Typical residence (every floor 4–22): four bedrooms with platform beds, tub chairs and
+  panelled walls, a U sofa under the crystal chandelier, marble dining for eight, a curved gloss
+  kitchen with a stone worktop and jali screens, baths, wardrobes, a namaz room with a lit mihrab
+  on the wall that faces the qibla, and the lift lobby.
+- Ground floor: entrance lobby. 3rd floor: fitness centre. Terrace: pool deck under a louvred
+  pergola, café kiosk with a canopy roof carrying a timber roof deck (stair, glass balustrade,
+  planters), curved sit-out, planters and bollards.
+
+Materials are PBR surfaces from **Poly Haven (CC0)** in `public/assets/tex` (marble, oak,
+plaster, velvet, brick, pavers, deck timber…, 1k WebP). Hero furniture is either Poly Haven
+models in `public/assets/models/ph` (lounge and arm chairs, marble drum tables, dining chairs,
+chandelier, globe pendant, plants, slatted cabinet, bistro set, bar stools; simplified with
+gltf-transform, 512 px WebP textures, ~2.7 MB in all) or modelled in code with rounded, smooth
+geometry (sofas, beds, tub chairs, the kitchen run, pendants, the café, the pergola).
+Sanitaryware and a few utility pieces are Kenney's **Furniture Kit (CC0)** in
+`public/assets/models/furniture`. Licence notes sit alongside each folder. `createBuilding`
+(lib/scene.js) builds a floor's interior the first time it is in focus, so the Flat Units page
+shows furnished floors too.
+
+### Walk-through camera
+
+Eye-level keyframes (`walk: true` in `lib/tour.js`) glide along routes rather than straight
+lines: `via` waypoints take the camera through the flat's doors and hall from room to room; a
+change of floor backs the camera out through the south glass, rides the façade and dollies in
+again; exterior shots arrive at an eye-level stop by orbiting to a point outside the glass and
+dollying in (and leave by backing out first). While a walk stop is active the focused floor's
+façade skin is hidden (`open` state in `lib/scene.js`), so the room shows through the glass on
+the way in and out. `window.__tour.settled` reports when the damped camera has reached its
+keyframe (used by screenshot tooling).
+
+## Map stage
+
+OpenFreeMap "liberty" style, the tower on its plot through a three.js custom layer. Knobs in `lib/map.js`:
 
 - `SITE` — plot centre lng/lat (19.038245, 72.839001; 122/124 SVS Road, seaward side of the road).
 - `MODEL_BEARING` — compass bearing of the GLB's +Z side (curved bay).

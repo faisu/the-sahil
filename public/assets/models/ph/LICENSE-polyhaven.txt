@@ -1,0 +1,8 @@
+Models in this folder come from Poly Haven (https://polyhaven.com), published under CC0 1.0
+(public domain): mid_century_lounge_chair, modern_arm_chair_01, coffee_table_round_01,
+modern_coffee_table_01, dining_chair_02, Chandelier_01, modern_ceiling_lamp_01, potted_plant_02,
+potted_plant_04, pachira_aquatica_01, modern_wooden_cabinet, outdoor_table_chair_set_01,
+bar_chair_round_01. They were simplified (meshoptimizer) and their textures resized to 512 px WebP.
+The PBR surface textures in /assets/tex (marble_01, oak_wood_planks, oak_veneer_01, plastered_wall_02,
+floral_jacquard, granite_tile_03, red_brick_03, rubber_tiles, square_concrete_pavers, wood_floor_deck,
+leather_white, velour_velvet, white_stucco) are Poly Haven CC0 textures at 1k, converted to WebP.
