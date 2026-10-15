@@ -1,6 +1,21 @@
-# The Sahil — website (Next.js)
+# 3D property showcases — website (Next.js)
 
-Next.js 15 (App Router) site for The Sahil, Mahim. Deploys to Vercel with no configuration.
+Next.js 15 (App Router) site hosting three projects from one deployment. Deploys to Vercel with no configuration.
+
+```
+/                       landing: one card per project (components/Landing.jsx, GSAP intro)
+/sahil, /sahil/units    The Sahil, Mahim: the bespoke map + 3D scroll tour and the flat units page (below)
+/krishna-kaveri         Krishna Kaveri (Dadamiya Infrastructure): GSAP scroll tour of the stilt + 5 building and its three furnished unit types
+/mansouza               Mansouza CHSL (Dadamiya Infrastructure): GSAP scroll tour of the stilt + 10 redevelopment
+lib/projects.js         project registry: names, facts, levels, model names, story sections, unit models and bounds
+lib/projectStage.js     generic three.js stage for the per-level Dadamiya models (cut-away, explode, night, unit overlay)
+components/GsapTour.jsx GSAP ScrollTrigger tour: camera orbit scrubbed per section, panel reveals, counters, progress rail
+```
+
+`/units` redirects to `/sahil/units`. The free-plan notice (watermark, bar and upgrade dialog) was removed: the site
+demonstrates any of the three projects to a prospect without flags or environment variables.
+
+## The Sahil
 
 ```
 app/page.jsx            scroll tour (home)           components/Tour.jsx + lib/tour.js
@@ -86,8 +101,6 @@ OpenFreeMap "liberty" style, the tower on its plot through a three.js custom lay
   with a token from another browser get 403/404. `app/robots.js` and `noai` headers turn AI crawlers
   away. Set `SCENE_SECRET` (any long random string) in Vercel. This stops scrapers and casual
   downloads; nothing rendered in a browser can be made impossible to capture.
-- **Free-plan notice** (`components/PlanNotice.jsx`, `lib/plan.js`): set `NEXT_PUBLIC_PLAN_PROVIDER`
-  and `NEXT_PUBLIC_PLAN_CONTACT_URL`; set `NEXT_PUBLIC_PLAN=pro` to remove it once purchased.
 
 ## Run locally
 
@@ -111,6 +124,15 @@ npx vercel
 
 `next.config.mjs` sets one-year immutable caching for everything under `/assets/`, so change a
 filename when you replace a model or image.
+
+## Dadamiya projects (Krishna Kaveri, Mansouza)
+
+The models come from `../tools/dadamiya` (see `../Dadamiya/DADAMIYA_NOTES.md`). `split_floors.py KK|MZ
+private/models` writes `kk_core.glb`/`kk_detail.glb` and `mz_core.glb`/`mz_detail.glb` with one node per level
+and category (`G_ArchWalls`, `F03_Glass`, …), compressed with gltf-transform meshopt; the furnished units are
+`kk_unit_A/B/C.glb` (meshopt + WebP). All of them are served through the same encrypted `/api/scene` route
+(`lib/sceneGuard.js` `MODEL_FILES`). The tour's keyframes are derived from the project's bounds and levels in
+`lib/projects.js`; to add a project, add its entry there and its models to `private/models`.
 
 ## Rebuilding the 3D model
 

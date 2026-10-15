@@ -119,7 +119,7 @@ export default function HomeContent() {
             <li><i className="stone" />Baths · stone</li>
             <li><i className="carpet" />Namaz room · carpet</li>
           </ul>
-          <p className="copy reveal d2">Seen from above, the plan matches the brochure layout. Open the <a href="/units" style={{ color: 'var(--blue)' }}>Flat Units overview</a> to inspect every floor.</p>
+          <p className="copy reveal d2">Seen from above, the plan matches the brochure layout. Open the <a href="/sahil/units" style={{ color: 'var(--blue)' }}>Flat Units overview</a> to inspect every floor.</p>
         </Panel>
 
         <Panel id="living" title="Living" nav="floor" step="07 · Walk-through">

@@ -3,6 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   // the GLBs live in /private (never served statically); ship them with the route that encrypts them
   outputFileTracingIncludes: { '/api/scene/part/[name]': ['./private/models/**'] },
+  async redirects() {
+    return [{ source: '/units', destination: '/sahil/units', permanent: true }];
+  },
   async headers() {
     return [
       {

@@ -1,0 +1,98 @@
+{
+ "levels": [
+  {
+   "level": "G",
+   "y": 0.15
+  },
+  {
+   "level": "F01",
+   "y": 2.65
+  },
+  {
+   "level": "F02",
+   "y": 5.35
+  },
+  {
+   "level": "F03",
+   "y": 8.05
+  },
+  {
+   "level": "F04",
+   "y": 10.75
+  },
+  {
+   "level": "F05",
+   "y": 13.45
+  },
+  {
+   "level": "T",
+   "y": 16.15
+  }
+ ],
+ "nodes": {
+  "G_Plinth": 1200,
+  "G_CompoundWall": 644,
+  "G_Plot": 1688,
+  "G_Cars": 264,
+  "G_LiftShaft": 88,
+  "G_LiftCars": 24,
+  "F01_ArchWalls": 17993,
+  "F02_ArchWalls": 19008,
+  "F03_ArchWalls": 19008,
+  "F04_ArchWalls": 19008,
+  "F05_ArchWalls": 19008,
+  "G_ArchWalls": 8159,
+  "T_ArchWalls": 1740,
+  "F01_WindowFrames": 5748,
+  "F02_WindowFrames": 5748,
+  "F03_WindowFrames": 5748,
+  "F04_WindowFrames": 5748,
+  "F05_WindowFrames": 5748,
+  "G_WindowFrames": 564,
+  "F01_Glass": 1040,
+  "F02_Glass": 1040,
+  "F03_Glass": 1040,
+  "F04_Glass": 1040,
+  "F05_Glass": 1040,
+  "G_Glass": 108,
+  "F01_Doors": 552,
+  "F02_Doors": 552,
+  "F03_Doors": 552,
+  "F04_Doors": 552,
+  "F05_Doors": 552,
+  "G_Doors": 60,
+  "F01_Stairs": 336,
+  "F02_Stairs": 336,
+  "F03_Stairs": 336,
+  "F04_Stairs": 336,
+  "F05_Stairs": 336,
+  "G_Stairs": 324,
+  "T_Stairs": 12,
+  "F01_Handrails": 508,
+  "F02_Handrails": 496,
+  "F03_Handrails": 496,
+  "F04_Handrails": 496,
+  "F05_Handrails": 496,
+  "G_Handrails": 260,
+  "T_Handrails": 224,
+  "F01_StairLandings": 116,
+  "F02_StairLandings": 116,
+  "F03_StairLandings": 116,
+  "F04_StairLandings": 116,
+  "F05_StairLandings": 116,
+  "G_StairLandings": 116,
+  "F01_Slabs": 2000,
+  "F02_Slabs": 2012,
+  "F03_Slabs": 2012,
+  "F04_Slabs": 2012,
+  "F05_Slabs": 1692,
+  "F01_Chajja": 724,
+  "F02_Chajja": 724,
+  "F03_Chajja": 724,
+  "F04_Chajja": 724,
+  "F05_Chajja": 724,
+  "T_Terrace": 1280,
+  "T_Parapets": 728,
+  "T_TerraceCore": 744
+ }
+}

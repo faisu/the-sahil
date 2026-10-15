@@ -1,19 +1,16 @@
-import Nav from '@/components/Nav';
-import Tour from '@/components/Tour';
-import HomeContent from '@/components/HomeContent';
+import ProjectNav from '@/components/ProjectNav';
+import Landing from '@/components/Landing';
 
 export const metadata = {
-  title: 'The Sahil — Luxury Begins Here | Metro Estates × Quba Groups, Mahim',
-  description: 'The Sahil, Mahim: exclusive 5 BHK sea-facing residences, one flat per floor, by Metro Estates and Quba Groups. Take the scroll tour of the tower.',
+  title: '3D Property Showcases — The Sahil, Krishna Kaveri, Mansouza',
+  description: 'Scroll-driven 3D virtual tours of three Mumbai residential projects, built from the architects’ drawings: The Sahil (Mahim), Krishna Kaveri and Mansouza CHSL (Dadamiya Infrastructure).',
 };
 
 export default function Home() {
   return (
     <>
-      <Nav page="home" />
-      <Tour>
-        <HomeContent />
-      </Tour>
+      <ProjectNav />
+      <Landing />
     </>
   );
 }
