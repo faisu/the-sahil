@@ -3,7 +3,9 @@
 Next.js 15 (App Router) site hosting three projects from one deployment. Deploys to Vercel with no configuration.
 
 ```
-/                       landing: one card per project (components/Landing.jsx, GSAP intro)
+/                       Storey platform landing (components/Landing.jsx + app/landing.css, data in lib/platform.js):
+                        pinned hero scrubs a live model (ghost → assembled → exploded → cut-away → night), manifesto,
+                        pipeline with the stepping plan sketch (components/PlanSketch.jsx), capabilities, live projects, numbers, CTA
 /sahil, /sahil/units    The Sahil, Mahim: the bespoke map + 3D scroll tour and the flat units page (below)
 /krishna-kaveri         Krishna Kaveri (Dadamiya Infrastructure): GSAP scroll tour of the stilt + 5 building and its three furnished unit types
 /mansouza               Mansouza CHSL (Dadamiya Infrastructure): GSAP scroll tour of the stilt + 10 redevelopment

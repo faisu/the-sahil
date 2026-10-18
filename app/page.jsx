@@ -1,15 +1,18 @@
-import ProjectNav from '@/components/ProjectNav';
+import LandingNav from '@/components/LandingNav';
 import Landing from '@/components/Landing';
+import { PRODUCT } from '@/lib/platform';
+import './landing.css';
 
 export const metadata = {
-  title: '3D Property Showcases — The Sahil, Krishna Kaveri, Mansouza',
-  description: 'Scroll-driven 3D virtual tours of three Mumbai residential projects, built from the architects’ drawings: The Sahil (Mahim), Krishna Kaveri and Mansouza CHSL (Dadamiya Infrastructure).',
+  title: `${PRODUCT.name} — immersive 3D tours from architects’ drawings`,
+  description: `${PRODUCT.pitch} Live on the platform: The Sahil (Mahim), Krishna Kaveri and Mansouza CHSL.`,
+  openGraph: { title: `${PRODUCT.name} — ${PRODUCT.tagline}`, description: PRODUCT.pitch, images: ['/assets/img/tower-night.jpg'] },
 };
 
 export default function Home() {
   return (
     <>
-      <ProjectNav />
+      <LandingNav />
       <Landing />
     </>
   );
