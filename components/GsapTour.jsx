@@ -1,10 +1,11 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { getProject, PROJECT_LIST } from '@/lib/projects';
 import { createProjectStage } from '@/lib/projectStage';
+import FinishStudio from '@/components/FinishStudio';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -18,12 +19,13 @@ function keyframes(p) {
   const R = Math.max(p.bounds.x[1] - p.bounds.x[0], p.bounds.z[1] - p.bounds.z[0]);
   const typY = p.levels.find((l) => l[0] === p.typical)[1];
   const D = Math.max(R * 1.6, H * 1.35);                      // arrival distance: whole building in frame, tall or wide
+  const FV = p.finish?.view ?? 1;                             // finished-floor framing: distance multiplier
   const HX = H + p.floorH * 1.6 * (p.levels.length - 1);        // height of the exploded stack
   const K = {
     arrive:  { cam: [cx + D * 0.8, H * 0.7 + 6, cz + D], look: [cx, H * 0.45, cz], fov: 38 },
     stilt:   { cam: [cx + R * 1.05, 2.2, cz + R * 1.35], look: [cx, 1.6, cz], fov: 44, cut: 0 },
     stack:   { cam: [cx + HX * 0.75, HX * 0.9 + 6, cz + HX * 0.9], look: [cx, HX * 0.5, cz], fov: 36, explode: 1 },
-    floor:   { cam: [cx + R * 0.35, typY + R * 1.15, cz + R * 0.85], look: [cx, typY, cz - R * 0.05], fov: 34, focus: p.typical, cut: 1 },
+    floor:   { cam: [cx + R * 0.35 * FV, typY + R * 1.15 * FV, cz + R * 0.85 * FV], look: [cx, typY, cz - R * 0.05], fov: 34, focus: p.typical, cut: 1, finish: p.finish ? 1 : 0 },
     terrace: { cam: [cx + R * 0.9, H + R * 0.95, cz + R * 1.1], look: [cx, H, cz], fov: 36 },
     night:   { cam: [cx + D * 0.95, H * 0.6 + 6, cz + D * 0.95], look: [cx, H * 0.42, cz], fov: 38, night: 1 },
   };
@@ -50,6 +52,8 @@ function orbitLerp(a, b, t) {
 export default function GsapTour({ slug }) {
   const project = getProject(slug);
   const root = useRef(null);
+  const [stageApi, setStageApi] = useState(null);
+  const [finishOn, setFinishOn] = useState(false);
 
   useEffect(() => {
     const p = project; if (!p) return;
@@ -58,9 +62,10 @@ export default function GsapTour({ slug }) {
     const narrow = matchMedia('(max-width: 820px)').matches;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const stage = createProjectStage(stageEl, p, { narrow });
+    setStageApi(stage);
     const K = keyframes({ ...p, H: stage.H });
     const sections = [...el.querySelectorAll('main > section[id], main > footer[id]')];
-    const DEF = { explode: 0, cut: 0, focus: null, night: 0, unit: null };
+    const DEF = { explode: 0, cut: 0, focus: null, night: 0, unit: null, finish: 0 };
     const keys = sections.map((s) => ({ ...DEF, ...(K[s.id] || K.arrive), id: s.id }));
     // sections without a key hold the previous camera
     for (let i = 1; i < keys.length; i++) if (!K[sections[i].id]) keys[i] = { ...keys[i - 1], id: sections[i].id, night: keys[i - 1].night };
@@ -93,8 +98,10 @@ export default function GsapTour({ slug }) {
       const focus = e < 0.5 ? a.focus : b.focus;
       stage.set({
         explode: lerp(a.explode, b.explode, e), cut: lerp(a.cut, b.cut, e), focus,
-        unit, unitAlpha, buildingAlpha: 1 - unitAlpha,
+        unit, unitAlpha, buildingAlpha: 1 - unitAlpha, finish: lerp(a.finish, b.finish, e),
       });
+      // the finished-floor tools appear while the tour holds on the floor stop
+      setFinishOn(!!a.finish && e < 0.02);
       stage.setNight(lerp(a.night, b.night, e));
     };
     const st = ScrollTrigger.create({
@@ -130,7 +137,7 @@ export default function GsapTour({ slug }) {
       });
     }, el);
 
-    return () => { st.kill(); ctx.revert(); stage.dispose(); document.body.classList.remove('night'); };
+    return () => { st.kill(); ctx.revert(); stage.dispose(); setStageApi(null); document.body.classList.remove('night'); };
   }, [project]);
 
   if (!project) return null;
@@ -144,6 +151,7 @@ export default function GsapTour({ slug }) {
       <div className="load-note">Loading 3D model</div>
       <div id="gstage" className="stage" role="img" aria-label={`3D model of ${p.name}. Drag to look around.`} />
       <div className="hint"><span className="h-drag">Drag to look around</span><span className="h-swipe">Swipe sideways to look around</span><span className="h-scroll">Scroll to tour</span></div>
+      {p.finish && <FinishStudio project={p} stage={stageApi} active={finishOn} />}
       <nav className="gs-rail" aria-label="Tour steps">
         <a href="#cover" className="on" title="Start" />
         {steps.map((s) => <a key={s.id} href={`#${s.id}`} title={s.title} />)}
@@ -183,6 +191,9 @@ export default function GsapTour({ slug }) {
                       <p className="copy small gs-rv">Furnished from the architect’s furniture and electrical drawing: every bed, wardrobe, sofa, dining set, kitchen platform, sanitary fitting, fan, downlight, switch board, socket and AC point sits where the drawing puts it. Scroll slowly to orbit the flat.</p>
                     </>
                   ) : <p className="copy gs-rv">{s.copy}</p>}
+                  {s.id === 'floor' && p.finish && (
+                    <p className="copy small gs-rv fs-tip">{p.finish.copies ? `All ${p.units.length * p.finish.copies.length} flats furnished. ` :'Finished in oak and warm white. '}Tap a pin for room sizes, drag the before/after divider to compare the CAD linework with the finished floor, or open the floor specs.</p>
+                  )}
                   {s.id === 'stack' && (
                     <ul className="gs-levels gs-rv">
                       {[...p.levels].reverse().map(([k, y, label]) => <li key={k}><b>{label}</b><span>+{y.toFixed(2)} m</span></li>)}
