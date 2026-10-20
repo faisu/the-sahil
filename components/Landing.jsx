@@ -40,13 +40,14 @@ function heroKeys(p, H, narrow) {
   const D = Math.max(R * 1.6, H * 1.35);
   const HX = H + p.floorH * 1.6 * (p.levels.length - 1);
   const off = narrow ? 0 : R * 0.42;          // look left of the building so it sits beside the headline
-  const dy = narrow ? -H * 0.28 : 0;           // phones: the headline sits at the bottom, so lift the building
-  const base = { explode: 0, cut: 0, focus: null, night: 0, alpha: 1 };
+  const dy = narrow ? -H * 0.8 : 0;            // phones: the headline sits at the bottom, so lift the building clear of it
+  // wire: the building as a hidden-line drawing; context: the neighbour blocks; finish: the furnished typical floor
+  const base = { explode: 0, cut: 0, focus: null, night: 0, alpha: 1, wire: 0, context: 1, finish: 0 };
   const K = {
-    draw:  { cam: [cx + D * 0.75, H * 0.95 + 12, cz + D * 1.1], look: [cx - off, H * 0.42 + dy, cz], fov: 36 },
-    stack: { cam: [cx + HX * 0.95, HX * 1.0 + 6, cz + HX * 1.1], look: [cx - off * 0.9, HX * 0.48 + dy * 1.5, cz], fov: 36, explode: 1 },
-    floor: { cam: [cx + R * 0.5, typY + R * 1.3, cz + R * 1.05], look: [cx - off * 0.55, typY + dy * 0.4, cz - R * 0.05], fov: 34, focus: p.typical, cut: 1 },
-    night: { cam: [cx + D * 1.0, H * 0.6 + 6, cz + D * 0.95], look: [cx - off * 0.8, H * 0.42 + dy, cz], fov: 38, night: 1 },
+    draw:  { cam: [cx + D * 0.75, H * 0.95 + 12, cz + D * 1.1], look: [cx - off, H * 0.42 + dy, cz], fov: 36, wire: 1, context: 0.3 },
+    stack: { cam: [cx + HX * 1.3, HX * 1.1 + 6, cz + HX * 1.5], look: [cx - off * 0.8, HX * 0.47 + dy * 0.5, cz], fov: 36, explode: 1, context: 0 },
+    floor: { cam: [cx + R * 0.45, typY + R * 1.5, cz + R * 1.25], look: [cx - off * 0.4, typY + dy * 0.35, cz - R * 0.05], fov: 34, focus: p.typical, cut: 1, context: 0, finish: 1 },
+    night: { cam: [cx + D * 1.0, H * 0.6 + 6, cz + D * 0.95], look: [cx - off * 0.8, H * 0.42 + dy * 0.45, cz], fov: 38, night: 1 },
   };
   return HERO_PHASES.map((ph) => ({ ...base, ...K[ph.id], alpha: ph.alpha ?? 1, t: ph.t }));
 }
@@ -80,38 +81,87 @@ export default function Landing() {
     // ---------- the live building in the hero ----------
     const heroEl = el.querySelector('.ld-hero'), stageEl = el.querySelector('.ld-stage'), blueprint = el.querySelector('.ld-blueprint');
     const loader = el.querySelector('.ld-loader i'), copyEl = el.querySelector('.ld-hero-copy'), phaseEls = [...el.querySelectorAll('.ld-phase')];
-    const bar = el.querySelector('.ld-hbar i');
+    const bar = el.querySelector('.ld-hbar i'), live = el.querySelector('.ld-live span'), hint = el.querySelector('.ld-hint');
+    const tags = [...el.querySelectorAll('.ld-tag')];
     const stage = createProjectStage(stageEl, hero, { narrow });
     const K = heroKeys(hero, stage.H, narrow);
-    stage.load(({ loaded, total }) => { if (loader && total) loader.style.width = `${Math.min(100, 100 * loaded / total)}%`; })
-      .then(() => { stageEl.classList.add('ready'); loader?.parentElement.classList.add('done'); })
+    const liveText = `Live model · ${hero.name}`;
+    let hintTimer = 0;
+    stage.load(({ loaded, total }) => {
+      if (loader && total) loader.style.width = `${Math.min(100, 100 * loaded / total)}%`;
+      if (live && total) live.textContent = `Streaming · ${Math.min(99, Math.round(100 * loaded / total))}%`;
+    })
+      .then(() => {
+        stageEl.classList.add('ready'); loader?.parentElement.classList.add('done');
+        if (live) live.textContent = liveText;
+        if (hint && !narrow) { hint.classList.add('show'); hintTimer = setTimeout(() => hint.classList.remove('show'), 6000); }
+      })
       .catch((e) => { console.error(e); stageEl.classList.add('failed'); });
+    const hideHint = () => { hint?.classList.remove('show'); clearTimeout(hintTimer); };
+    stageEl.addEventListener('pointerdown', hideHint, { once: true });
+
+    // the furnished flats for the cut-away: a few MB more, fetched once the viewer is actually
+    // scrolling the hero (never with data saver on)
+    let unitsReady = 0, unitsAsked = false;
+    const wantUnits = hero.finish && hero.units?.length && !navigator.connection?.saveData;
+    const askUnits = () => {
+      if (unitsAsked || !wantUnits) return;
+      unitsAsked = true;
+      Promise.all(hero.units.map((u) => stage.loadUnit(u.id))).then(() => { unitsReady = 1; apply(); });
+    };
 
     let p = 0, idle = 0, heroNight = false;
     const darks = [];
     let heroVis = null;
     const updateNav = () => nav?.classList.toggle('dark', (heroVis?.isActive && heroNight) || darks.some((t) => t.isActive));
+    // pointer parallax: the camera leans a little towards the cursor (desktop only)
+    const par = { x: 0, y: 0, tx: 0, ty: 0 };
+    const onPointer = (e) => { par.tx = (e.clientX / innerWidth - 0.5) * 2; par.ty = (e.clientY / innerHeight - 0.5) * 2; };
+    if (!narrow && !reduced) heroEl.addEventListener('pointermove', onPointer);
+    // floor tags beside the exploded stack: anchored to the corner that sits right-most on screen
+    const [bx, bz] = [hero.bounds.x[1] + 0.8, hero.bounds.z[0]];
+    const gap = hero.floorH * 1.6;
+    let tagAlpha = 0;
+    const placeTags = () => {
+      if (!tags.length) return;
+      stage.levels.forEach((l, i) => {
+        const n = tags[i]; if (!n) return;
+        if (tagAlpha < 0.02) { n.style.opacity = 0; return; }
+        const [x, y, front] = stage.project([bx, l.y + stage.state.explode * gap * i + hero.floorH * 0.45, bz]);
+        n.style.opacity = front ? tagAlpha : 0;
+        n.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      });
+    };
+    const offFrame = stage.onFrame(placeTags);
     const apply = () => {
       let i = 0; while (i < K.length - 2 && p >= K[i + 1].t) i++;
       const a = K[i], b = K[i + 1];
       const f = (p - a.t) / (b.t - a.t);
       const e = smooth(Math.max(0, Math.min(1, (f - 0.3) / 0.7)));   // hold the first third of each phase, move through the rest
       const c = orbitLerp(a, b, e);
-      // a slow turn while the page is still at the top: the ghosted drawing drifts under the headline
-      const ang = c.ang + idle * (1 - Math.min(1, p / 0.08));
+      // a slow turn while the page is still at the top: the drawing drifts under the headline
+      const ang = c.ang + idle * (1 - Math.min(1, p / 0.08)) + par.x * 0.05;
       // the keys frame a wide screen; narrower viewports back the camera off so the building still fits
       const k = Math.max(1, Math.min(2.6, 1.78 / ((stageEl.clientWidth || 1) / (stageEl.clientHeight || 1))));
-      stage.setCamera([c.look[0] + Math.cos(ang) * c.r * k, c.look[1] + c.h * k, c.look[2] + Math.sin(ang) * c.r * k], c.look, c.fov);
+      stage.setCamera([c.look[0] + Math.cos(ang) * c.r * k, c.look[1] + c.h * k - par.y * c.r * 0.035, c.look[2] + Math.sin(ang) * c.r * k], c.look, c.fov);
       const alpha = lerp(a.alpha, b.alpha, e);
-      stage.set({ explode: lerp(a.explode, b.explode, e), cut: lerp(a.cut, b.cut, e), focus: e < 0.5 ? a.focus : b.focus, buildingAlpha: alpha });
+      const explode = lerp(a.explode, b.explode, e);
+      stage.set({
+        explode, cut: lerp(a.cut, b.cut, e), focus: e < 0.5 ? a.focus : b.focus, buildingAlpha: alpha,
+        wire: lerp(a.wire, b.wire, e), context: lerp(a.context, b.context, e), finish: lerp(a.finish, b.finish, e) * unitsReady,
+      });
       stage.setNight(lerp(a.night, b.night, e));
-      blueprint.style.opacity = (1 - alpha) * 0.9;
+      blueprint.style.opacity = lerp(a.wire, b.wire, e) * 0.9;
+      // tags fade in with the explode and out again as the cut-away begins
+      tagAlpha = smooth(Math.max(0, Math.min(1, (explode - 0.35) / 0.5))) * (1 - smooth(Math.max(0, Math.min(1, lerp(a.cut, b.cut, e) / 0.5))));
       const active = e < 0.5 ? i : i + 1;
       phaseEls.forEach((n, j) => n.classList.toggle('on', j === active));
       if (bar) bar.style.transform = `scaleY(${p})`;
       const fade = Math.max(0, 1 - p / 0.14);
       copyEl.style.opacity = fade; copyEl.style.transform = `translateY(${(1 - fade) * -40}px)`; copyEl.style.pointerEvents = fade > 0.3 ? 'auto' : 'none';
       heroEl.classList.toggle('scrolled', p > 0.03);
+      if (p > 0.03) hideHint();
+      if (p > 0.12) askUnits();
       heroNight = lerp(a.night, b.night, e) > 0.5;
       heroEl.classList.toggle('is-night', heroNight);
       updateNav();
@@ -122,9 +172,16 @@ export default function Landing() {
       onUpdate: (self) => { gsap.to(cur, { t: self.progress, duration: reduced ? 0 : 0.3, overwrite: true, ease: 'power2.out', onUpdate: () => { p = cur.t; apply(); } }); },
     });
     heroVis = ScrollTrigger.create({ trigger: heroEl, start: 'top 60px', end: 'bottom 60px', onToggle: updateNav });
-    const tick = (_t, deltaMs) => { if (p < 0.08 && !reduced) { idle += (deltaMs / 1000) * 0.035; apply(); } };   // ticker delta is in ms
+    const tick = (_t, deltaMs) => {   // ticker delta is in ms
+      let moved = false;
+      if (p < 0.08 && !reduced) { idle += (deltaMs / 1000) * 0.035; moved = true; }
+      if (Math.abs(par.tx - par.x) > 1e-3 || Math.abs(par.ty - par.y) > 1e-3) { par.x += (par.tx - par.x) * 0.06; par.y += (par.ty - par.y) * 0.06; moved = true; }
+      if (moved) apply();
+    };
     gsap.ticker.add(tick);
     apply();
+    // the shot rig waits on this: true once the model and, when wanted, the furnished flats are in
+    window.__heroReady = () => stageEl.classList.contains('ready') && (!unitsAsked || unitsReady === 1);
 
     // ---------- page animations ----------
     const ctx = gsap.context(() => {
@@ -172,7 +229,11 @@ export default function Landing() {
       });
     }, root);
 
-    return () => { gsap.ticker.remove(tick); st.kill(); heroVis.kill(); ctx.revert(); stage.dispose(); nav?.classList.remove('dark'); };
+    return () => {
+      gsap.ticker.remove(tick); st.kill(); heroVis.kill(); ctx.revert(); offFrame(); clearTimeout(hintTimer);
+      heroEl.removeEventListener('pointermove', onPointer); stageEl.removeEventListener('pointerdown', hideHint);
+      stage.dispose(); nav?.classList.remove('dark'); delete window.__heroReady;
+    };
   }, [hero]);
 
 
@@ -198,8 +259,12 @@ export default function Landing() {
               <li key={ph.id} className="ld-phase"><b>{ph.step}</b><span><strong>{ph.title}</strong><small>{ph.copy}</small></span></li>
             ))}
           </ol>
+          <div className="ld-tags" aria-hidden="true">
+            {hero.levels.map(([k, , label]) => <span key={k} className={`ld-tag${k === hero.typical ? ' typ' : ''}`}><i />{label}{k === hero.typical ? <small>typical</small> : null}</span>)}
+          </div>
           <div className="ld-hbar" aria-hidden="true"><i /></div>
-          <div className="ld-live"><i />Live model · {hero.name}</div>
+          <div className="ld-live"><i /><span>Live model · {hero.name}</span></div>
+          <div className="ld-hint" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11M12 10.5V7.5a1.5 1.5 0 0 1 3 0v3M15 10v-1a1.5 1.5 0 0 1 3 0v6a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L3.6 14a1.5 1.5 0 0 1 2.4-1.8L9 15" /></svg>Drag to look around</div>
           <a className="ld-cue" href="#why"><span>Scroll to build it</span><svg width="14" height="22" viewBox="0 0 14 22" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="1" width="12" height="20" rx="6" /><path d="M7 5v4" /></svg></a>
         </div>
       </section>
