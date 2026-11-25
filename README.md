@@ -8,6 +8,8 @@ Next.js 15 (App Router) site hosting three projects from one deployment. Deploys
                         pipeline with the stepping plan sketch (components/PlanSketch.jsx), capabilities, live projects, numbers, CTA
 /sahil, /sahil/units    The Sahil, Mahim: the bespoke map + 3D scroll tour and the flat units page (below)
 /krishna-kaveri         Krishna Kaveri (Dadamiya Infrastructure): GSAP scroll tour of the stilt + 5 building and its three furnished unit types
+/krishna-kaveri/showroom, /mansouza/showroom
+                        full-screen 3D showroom (components/Showroom.jsx + app/showroom.css, presets and hotspots in lib/showroom.js)
 /mansouza               Mansouza CHSL (Dadamiya Infrastructure): GSAP scroll tour of the stilt + 10 redevelopment
 lib/projects.js         project registry: names, facts, levels, model names, story sections, unit models and bounds
 lib/projectStage.js     generic three.js stage for the per-level Dadamiya models (cut-away, explode, night, unit overlay)
@@ -135,6 +137,30 @@ and category (`G_ArchWalls`, `F03_Glass`, …), compressed with gltf-transform m
 `kk_unit_A/B/C.glb` (meshopt + WebP). All of them are served through the same encrypted `/api/scene` route
 (`lib/sceneGuard.js` `MODEL_FILES`). The tour's keyframes are derived from the project's bounds and levels in
 `lib/projects.js`; to add a project, add its entry there and its models to `private/models`.
+
+## 3D showroom (Krishna Kaveri, Mansouza)
+
+`/krishna-kaveri/showroom` and `/mansouza/showroom` reuse `lib/projectStage.js` (created with `drag: false`; the
+showroom runs its own persistent orbit) and the tour's camera keyframes (`lib/tourKeys.js`):
+
+- drag to orbit, pinch / wheel / +− to zoom, arrow keys; turntable; reset
+- Exterior / Interior toggle (interior = furnished cut-away of the typical floor; the unit models load on first visit)
+- presets: façade, aerial, stilt, terrace, floor stack, typical floor (`showroomViews`; `fit` keeps them framed on any screen)
+- hotspots on the exterior (`exteriorHotspots`; anchors are model points or a mesh category's bounding box) and on the
+  floor (`project.finish.hotspots`), each opening a card; flat pins open the flat
+- flat-type picker: each furnished unit as a dollhouse with its rooms and modelled area
+- floor by floor: each storey from outside (camera level with it, the storey outlined; `facadeLevelOrbit`) or cut away
+- exploded stack, fullscreen, share link (`?view=`, `?unit=`, `?level=`, `?storey=`, `&t=` clock hours, `&d=` day of year;
+  the old `&night=1` opens at 20:30)
+- the real look (`createProjectStage(..., { real: true })`, `lib/atmosphere.js`): plaster / stucco / paver / veneer
+  textures on the facade (planar UVs made on load), a Preetham sky, reflections baked from that sky, and the sun at its
+  true position for Mumbai (19.07° N, 72.88° E, IST) at the clock time and date, casting shadows (also on phones, at a
+  1024 px shadow map). Drawing north is taken as true north (`project.north`, radians, rotates it). After dark the
+  glazing glows, street lamps along an indicative footpath light up with pools of light, the stilt is lit and the
+  neighbouring blocks show lit windows; blocks that would stand in front of the camera fade out
+- the clock (`components/SunClock.jsx`): 24-hour dial (drag the sun), slider, presets (sunrise, morning, noon, golden
+  hour, dusk, night, now), season (today, equinoxes, solstices) and a time-lapse of the day
+- a seven-step first-visit walkthrough (remembered in localStorage), an info sheet listing what the model does not have
 
 ## Rebuilding the 3D model
 

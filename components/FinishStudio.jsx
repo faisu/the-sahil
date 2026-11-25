@@ -9,7 +9,7 @@ const PIN_H = 1.5;   // pin height above the finished floor (m)
 const area = (rooms) => rooms.reduce((s, [, w, d]) => s + w * d, 0);
 const fmt = (v) => v.toFixed(2);
 
-function cardFor(p, h) {
+export function cardFor(p, h) {
   if (h.unit) {
     const u = p.units.find((x) => x.id === h.unit);
     const row = p.finish.schedule?.rows.find((r) => r.flat === `Unit ${h.unit}`);
