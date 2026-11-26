@@ -152,12 +152,29 @@ showroom runs its own persistent orbit) and the tour's camera keyframes (`lib/to
 - floor by floor: each storey from outside (camera level with it, the storey outlined; `facadeLevelOrbit`) or cut away
 - exploded stack, fullscreen, share link (`?view=`, `?unit=`, `?level=`, `?storey=`, `&t=` clock hours, `&d=` day of year;
   the old `&night=1` opens at 20:30)
-- the real look (`createProjectStage(..., { real: true })`, `lib/atmosphere.js`): plaster / stucco / paver / veneer
-  textures on the facade (planar UVs made on load), a Preetham sky, reflections baked from that sky, and the sun at its
-  true position for Mumbai (19.07° N, 72.88° E, IST) at the clock time and date, casting shadows (also on phones, at a
-  1024 px shadow map). Drawing north is taken as true north (`project.north`, radians, rotates it). After dark the
-  glazing glows, street lamps along an indicative footpath light up with pools of light, the stilt is lit and the
-  neighbouring blocks show lit windows; blocks that would stand in front of the camera fade out
+- the real look (`createProjectStage(..., { real: true })`, `lib/atmosphere.js`): flat paint colours with a slight
+  shader mottle (`PAINT`, `project.paint`), a Preetham sky with procedural clouds and a blue hour after sunset,
+  reflections baked from that sky, and the sun at its true position for Mumbai (19.07° N, 72.88° E, IST) at the clock
+  time and date, casting shadows. Drawing north is taken as true north (`project.north`, radians, rotates it). After
+  dark single window panes light up per room, warm-white street lamps along an indicative footpath throw pools of
+  light, the stilt is lit and the low-rise neighbours show lit windows. An indicative road with kerb and parked cars
+  sits on the gate side (`project.road.side`), with trees round the plot; anything that would stand between the camera
+  and the building fades out. `project.viewFrom: 'north'` mirrors the exterior presets to the gate side and
+  `project.hour` sets the opening time
+- Krishna Kaveri's facade model carries the architect's detailing as extra categories (`Trim`, `Ironwork`, `Grills`,
+  `Signage`, `SignLogo`; grills and signs are alpha cards with `kk_grill` / `kk_sign` / `kk_logo` textures) and a baked
+  ambient-occlusion atlas on the second UV set (`project.ao`, `public/assets/tex/kk_ao.webp`). Models without normals
+  get flat ones on load
+- image finishing (`lib/postfx.js`, three's own passes): tiers `high` (MSAA 4x, GTAO, bloom, grade), `mid` (no GTAO),
+  `low` (MSAA 2x, bloom after dark only; where phones start) and `off`. The stage drops a tier when the median frame
+  runs over 30 ms (45 ms on `low`); `?fx=high|mid|low|off` forces one
+- furnished Krishna Kaveri flats carry their room lighting baked into the glTF occlusion slot on the second UV set
+  (`project.unitLight`); the real look uses it as a light map (sRGB, stepped back by day), the plain look as AO.
+  Ceiling fittings are named `ceil_*` and wall points `elec_*`, and are hidden in the top-down floor cut-away
+- stills (`project.stills`, `public/assets/img/kk/`): the Photo button fades to a path-traced still of the current
+  preset (`hero_<view>_<day|dusk|night>.webp`, picked from the sun's height) or of the flat's living room
+  (`unit_<X>_living.webp`); touching the model returns to live. The 360° button opens the flat's panorama
+  (`unit_<X>_pano.webp`, `components/PanoView.jsx`; `pano.heading` is the starting direction in degrees)
 - the clock (`components/SunClock.jsx`): 24-hour dial (drag the sun), slider, presets (sunrise, morning, noon, golden
   hour, dusk, night, now), season (today, equinoxes, solstices) and a time-lapse of the day
 - a seven-step first-visit walkthrough (remembered in localStorage), an info sheet listing what the model does not have

@@ -9,6 +9,7 @@ import { cardFor } from '@/components/FinishStudio';
 import { showroomViews, unitOrbit, levelOrbit, facadeLevelOrbit, fromOrbit, exteriorHotspots, SHOWROOM_GAPS } from '@/lib/showroom';
 import { sunTimes, dayOfYear } from '@/lib/atmosphere';
 import SunClock from '@/components/SunClock';
+import PanoView from '@/components/PanoView';
 
 // Full-screen 3D showroom for a Dadamiya project: free orbit with pinch / wheel zoom, camera
 // presets, exterior / interior (furnished cut-away) toggle, hotspots with feature cards, flat-type
@@ -32,6 +33,8 @@ const IC = {
   spin: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4',
   reset: 'M12 4a8 8 0 1 1-7.4 5M4 4v5h5',
   share: 'M16 6l-4-4-4 4M12 2v13M5 11v9h14v-9',
+  photo: 'M4 8h3l1.5-2h7L17 8h3v11H4zM12 10.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6z',
+  pano: 'M3 7c6 2.5 12 2.5 18 0v10c-6-2.5-12-2.5-18 0zM12 9v6',
   help: 'M9.2 9a3 3 0 1 1 4.3 2.7c-.9.5-1.5 1.1-1.5 2.1V15M12 18.5v.5M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19z',
   info: 'M12 11v6M12 7.5v.5M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19z',
   chev: 'M6 15l6-6 6 6',
@@ -59,12 +62,15 @@ export default function Showroom({ slug }) {
   const [unit, setUnit] = useState(null);
   const [unitLoading, setUnitLoading] = useState(false);
   const [level, setLevel] = useState(null);        // exterior x-ray cut at a level
-  const [hour, setHour] = useState(11);             // local clock time (IST), hours
+  const [hour, setHour] = useState(p.hour ?? 11);             // local clock time (IST), hours
   const [doy, setDoy] = useState(() => dayOfYear());   // day of the year: the sun's path follows the season
   const [sunInfo, setSunInfo] = useState(null);       // { el, az, night } from the stage
   const [playing, setPlaying] = useState(false);     // time-lapse
   const [extLevel, setExtLevel] = useState(null);    // a storey picked out on the exterior
   const [floorMode, setFloorMode] = useState('out'); // floors sheet: from outside | cut away
+  const [photo, setPhoto] = useState(false);         // path-traced still of the current preset, over the live view
+  const [photoOk, setPhotoOk] = useState(false);     // the still has loaded
+  const [pano, setPano] = useState(false);           // 360° still of the open flat
   const night = !!sunInfo && sunInfo.night > 0.5;
   const [explode, setExplode] = useState(false);
   const [spin, setSpin] = useState(false);
@@ -121,7 +127,8 @@ export default function Showroom({ slug }) {
   // ---------- stage ----------
   useEffect(() => {
     const narrow = matchMedia('(max-width: 760px)').matches;
-    const s = createProjectStage(stageEl.current, p, { narrow, drag: false, maxDpr: narrow ? 1.5 : 1.75, real: true, shadows: true });
+    const fx0 = new URLSearchParams(location.search).get('fx');   // ?fx=off|low|mid|high pins the image-effects tier (testing)
+    const s = createProjectStage(stageEl.current, p, { narrow, drag: false, maxDpr: narrow ? 1.5 : 1.75, real: true, shadows: true, fx: ['off', 'low', 'mid', 'high'].includes(fx0) ? fx0 : null });
     api.current = s;
     window.__showroom = { stage: s, cam };   // inspection hook for screenshot tooling, like window.__tour
     setCanFull(!!document.fullscreenEnabled);
@@ -154,7 +161,7 @@ export default function Showroom({ slug }) {
     const pts = new Map();
     let pinch0 = 0, r0 = 0, moved = 0;
     const lim = () => { const h = home.current || cam.current; return [h.r * 0.35, h.r * 2.4]; };
-    const touch = () => { camTween.current?.kill(); setInteracted(true); setSpin(false); };
+    const touch = () => { camTween.current?.kill(); setInteracted(true); setSpin(false); setPhoto(false); };
     const down = (e) => { el.setPointerCapture?.(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; el.classList.add('dragging');
       if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); r0 = cam.current.r; } };
     const move = (e) => {
@@ -225,7 +232,7 @@ export default function Showroom({ slug }) {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [playing]);
-  const toggleNight = () => { const { set } = sunTimes(doy); timeTo(night ? 11 : Math.max(20, set + 1.2)); };
+  const toggleNight = () => { const { set } = sunTimes(doy); timeTo(night ? (p.hour ?? 11) : Math.max(20, set + 1.2)); };
 
   // fullscreen state follows the browser (Esc leaves it too)
   useEffect(() => {
@@ -276,7 +283,7 @@ export default function Showroom({ slug }) {
   };
   useEffect(() => {
     if (!api.current) return;
-    const tq = Math.abs(hour - 11) > 0.01 ? String(Math.round(hour * 4) / 4) : null, dq = doy !== dayOfYear() ? String(doy) : null;
+    const tq = Math.abs(hour - (p.hour ?? 11)) > 0.01 ? String(Math.round(hour * 4) / 4) : null, dq = doy !== dayOfYear() ? String(doy) : null;
     writeUrl({ view: mode !== 'unit' && !level && !extLevel && view !== 'facade' ? view : null, unit: mode === 'unit' ? unit : null, level: mode !== 'unit' ? level : null, storey: mode === 'exterior' ? extLevel : null, t: playing ? null : tq, d: dq });
   }, [mode, view, unit, level, extLevel, hour, doy, playing]);
 
@@ -386,6 +393,21 @@ export default function Showroom({ slug }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tip, mode]);
 
+  // ---------- stills ----------
+  // path-traced renders for the camera presets (day, dusk, night) and the flats; the live view fades to
+  // the still when asked and comes back as soon as the model is touched
+  const tod = !sunInfo || sunInfo.el > 3 ? 'day' : sunInfo.el > -9 ? 'dusk' : 'night';
+  const still = (() => {
+    const st = p.stills; if (!st) return null;
+    if (mode === 'unit' && unit && st.units?.[unit]?.living) return `${st.base}/unit_${unit}_living.webp`;
+    if (mode === 'exterior' && !level && !extLevel && !explode && st.views?.includes(view)) return `${st.base}/hero_${view}_${tod}.webp`;
+    return null;
+  })();
+  const panoOf = mode === 'unit' && unit ? p.stills?.units?.[unit]?.pano : null;
+  useEffect(() => { setPhotoOk(false); }, [still]);
+  useEffect(() => { if (!still) setPhoto(false); }, [still]);
+  useEffect(() => { if (!panoOf) setPano(false); }, [panoOf]);
+
   // ---------- render ----------
   const curUnit = unit ? p.units.find((u) => u.id === unit) : null;
   const unitRow = curUnit && p.finish?.schedule?.rows.find((r) => r.flat === `Unit ${curUnit.id}` || r.flat === curUnit.id);
@@ -412,6 +434,15 @@ export default function Showroom({ slug }) {
     <div ref={root} className={`sr${night ? ' sr-night' : ''}${ready ? ' sr-ready' : ''}`} style={{ '--accent': p.accent }}>
       <div ref={stageEl} className="sr-stage" role="img" aria-label={`3D model of ${p.name}. Drag to orbit, pinch or scroll to zoom.`} tabIndex={0} />
 
+      {still && photo && (
+        <div className={`sr-photo${photoOk ? ' on' : ''}`} aria-hidden={!photoOk}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={still} alt={`Rendered still of ${p.name}`} onLoad={() => setPhotoOk(true)} onError={() => { setPhoto(false); flash('No rendered still for this view yet'); }} />
+          <span className="tag">Rendered still · drag to return to the live model</span>
+        </div>
+      )}
+      {pano && panoOf && <PanoView src={`${p.stills.base}/unit_${unit}_pano.webp`} heading={panoOf.heading || 0} label={curUnit?.name || 'Flat'} onClose={() => setPano(false)} />}
+
       {!ready && (
         <div className="sr-loading" aria-live="polite">
           <p className="k">{p.developer}</p>
@@ -435,6 +466,8 @@ export default function Showroom({ slug }) {
         <button type="button" className="sr-timebtn" onClick={() => setSheet(sheet === 'clock' ? null : 'clock')} aria-pressed={sheet === 'clock'} title="Time of day: sun, shadows and lights"><Icon d={night ? IC.moon : IC.sun} /><span>{fmtTime(hour)}</span></button>
         <button type="button" onClick={toggleExplode} aria-pressed={explode} disabled={mode === 'unit'} title="Pull the floors apart"><Icon d={IC.explode} /><span>Stack</span></button>
         <button type="button" onClick={() => setSheet(sheet === 'floors' ? null : 'floors')} aria-pressed={sheet === 'floors' || !!level || !!extLevel} title="Floor by floor, outside or cut away"><Icon d={IC.floors} /><span>Floors</span></button>
+        {still && <button type="button" className="sr-photobtn" onClick={() => { setSpin(false); setPhoto(!photo); }} aria-pressed={photo} title="Rendered still of this view"><Icon d={IC.photo} /><span>Photo</span></button>}
+        {panoOf && <button type="button" onClick={() => setPano(true)} title="Look around inside, 360°"><Icon d={IC.pano} /><span>360°</span></button>}
         <button type="button" onClick={() => setSpin(!spin)} aria-pressed={spin} title="Turntable"><Icon d={IC.spin} /><span>Spin</span></button>
         <button type="button" onClick={reset} title="Reset the view"><Icon d={IC.reset} /><span>Reset</span></button>
         <button type="button" onClick={share} title="Share this view"><Icon d={IC.share} /><span>Share</span></button>
@@ -442,7 +475,7 @@ export default function Showroom({ slug }) {
         <button type="button" onClick={() => setTip(0)} title="How it works"><Icon d={IC.help} /><span>Help</span></button>
       </nav>
 
-      <div className="sr-pins" aria-label="Hotspots">
+      <div className="sr-pins" aria-label="Hotspots" style={photo && still ? { display: 'none' } : undefined}>
         {pins.map((h) => (
           <button type="button" key={(mode === 'interior' ? 'f:' : 'e:') + h.id} ref={(n) => { pinsEl.current[h.id] = n; }}
             className={`sr-pin off${open === h.id ? ' sel' : ''}${h.unit || h.flat ? ' flat' : ''}`} onClick={() => setOpen(open === h.id ? null : h.id)} aria-expanded={open === h.id}>
