@@ -69,6 +69,7 @@ export default function Showroom({ slug }) {
   const [flat, setFlat] = useState(null);               // the open flat: { type, sx, sz, key, at, side }
   const [rooms, setRooms] = useState([]);               // rooms of the open flat, from its model
   const [room, setRoom] = useState(null);               // room looked at (key), null = the whole flat
+  const pendingRoom = useRef(null);
   const inside = useRef(false);                         // the camera stands inside a room: drag looks around
   const flats = useMemo(() => (flatLevels ? p.units.flatMap((u, i) => (p.finish?.copies || [[1, 1]]).map(([sx, sz]) => {
     const c = u.at || [(u.bounds.x[0] + u.bounds.x[1]) / 2, (u.bounds.z[0] + u.bounds.z[1]) / 2], x = c[0] * sx, z = c[1] * sz;
@@ -80,8 +81,11 @@ export default function Showroom({ slug }) {
     const rs = rooms.filter((r) => r.cat !== 'passage' && r.size[0] * r.size[1] > 1).sort((a, b) => (ORDER.indexOf(a.cat) + 99) % 99 - (ORDER.indexOf(b.cat) + 99) % 99 || b.size[0] * b.size[1] - a.size[0] * a.size[1]);
     const n = {}, tot = {}; rs.forEach((r) => { tot[r.cat] = (tot[r.cat] || 0) + 1; });
     return rs.map((r) => { n[r.cat] = (n[r.cat] || 0) + 1; const base = NAME[r.cat] || r.cat[0].toUpperCase() + r.cat.slice(1);
-      return { ...r, label: tot[r.cat] > 1 ? `${base} ${n[r.cat]}` : base, walk: Math.min(r.size[0], r.size[1]) >= 1.8 && r.size[0] * r.size[1] >= 4.5 }; });
+      return { ...r, label: tot[r.cat] > 1 ? `${base} ${n[r.cat]}` : base, walk: !!r.stand && r.clear >= 0.15 }; });
   }, [rooms]);
+  // ground-floor walk: eye-level stops on the stilt (project.groundTour)
+  const groundStops = p.groundTour || null;
+  const [stop, setStop] = useState(null);               // index of the stop stood at, null = not on the walk
   const yOf = useCallback((k) => (p.levels.find((l) => l[0] === k) || [0, 0])[1], [p]);
   const [level, setLevel] = useState(null);        // exterior x-ray cut at a level
   const [hour, setHour] = useState(p.hour ?? 11);             // local clock time (IST), hours
@@ -170,9 +174,11 @@ export default function Showroom({ slug }) {
     if (t0 >= 0 && t0 < 24) setHour(t0); else if (q.get('night') === '1') setHour(20.5);
     if (d0 >= 1 && d0 <= 366) setDoy(d0);
     const f0 = flatLevels?.includes(q.get('floor')) ? q.get('floor') : p.typical;
-    if (q.get('unit') && p.units.some((u) => u.id === q.get('unit'))) setTimeout(() => {
+    const w0 = groundStops ? groundStops.findIndex((g) => g.id === q.get('walk')) : -1;
+    if (w0 >= 0) setTimeout(() => selectGround(w0, { instant: true }), 50);
+    else if (q.get('unit') && p.units.some((u) => u.id === q.get('unit'))) setTimeout(() => {
       const fl = flats.find((f) => f.type === q.get('unit') && `${f.sx},${f.sz}` === (q.get('pos') || '1,1'));
-      if (fl) selectFlat(fl, f0); else selectUnit(q.get('unit'));
+      if (fl) selectFlat(fl, f0, q.get('room')); else selectUnit(q.get('unit'));
     }, 50);
     else if (flatLevels && v0.id === 'floor') setTimeout(() => selectFloorPlan(f0, { instant: true }), 50);
     else if (q.get('level') && p.levels.some((l) => l[0] === q.get('level'))) setTimeout(() => selectLevel(q.get('level')), 50);
@@ -281,7 +287,18 @@ export default function Showroom({ slug }) {
 
   // ---------- hotspots follow the camera ----------
   const flatPins = useMemo(() => flats.map((f) => ({ id: 'flat:' + f.key, at: f.at, up: p.floorH + 0.5, label: f.type, flatRef: f })), [flats, p]);
-  const pins = mode === 'exterior' && !explode && !level && !extLevel ? extPins : mode === 'interior' ? (flatLevels ? flatPins : floorPins) : [];
+  // standing in a room or on the ground-floor walk: a signpost at every other place to step to
+  const goPins = useMemo(() => {
+    if (mode === 'ground' && stop != null && groundStops) return groundStops.map((g, i) => ({ id: 'go:' + g.id, abs: [g.at[0], p.levels[0][1] + 1.25, g.at[1]], label: g.label, go: i })).filter((_, i) => i !== stop);
+    if (mode === 'unit' && flat && room) return roomList.filter((r) => r.key !== room).map((r) => { const c = r.stand || r.c; return { id: 'go:' + r.key, abs: [c[0] * flat.sx, yOf(intLevel) + 1.2, c[1] * flat.sz], label: r.label, go: r.key }; });
+    return [];
+  }, [mode, stop, groundStops, flat, room, roomList, intLevel, yOf, p]);
+  // only the nearest few: signposts for far places would pile up behind the walls
+  const nearPins = useMemo(() => { const o = cam.current; if (!goPins.length || !o) return goPins;
+    const here = mode === 'ground' ? groundStops[stop].at : (() => { const r = roomList.find((x) => x.key === room); const c = r?.stand || r?.c || [0, 0]; return [c[0] * (flat?.sx || 1), c[1] * (flat?.sz || 1)]; })();
+    return goPins.map((g) => ({ g, d: Math.hypot(g.abs[0] - here[0], g.abs[2] - here[1]) })).filter((x) => x.d < 14).sort((a, b) => a.d - b.d).slice(0, 4).map((x) => x.g);
+  }, [goPins, mode, stop, room, roomList, flat, groundStops]);
+  const pins = goPins.length ? nearPins : mode === 'exterior' && !explode && !level && !extLevel ? extPins : mode === 'interior' ? (flatLevels ? flatPins : floorPins) : [];
   const pinY = flatLevels ? yOf(intLevel) : typY;
   useEffect(() => {
     const s = api.current; if (!s) return;
@@ -302,11 +319,11 @@ export default function Showroom({ slug }) {
       const cp = s.camera.position, ctr = s.center;
       for (const h of pins) {
         const el = pinsEl.current[h.id]; if (!el) continue;
-        const a = h.at ? [h.at[0], pinY + (h.up || PIN_H), h.at[1]] : resolve(h);
+        const a = h.abs || (h.at ? [h.at[0], pinY + (h.up || PIN_H), h.at[1]] : resolve(h));
         if (!a) { el.classList.add('off'); continue; }
         const [x, y, vis] = s.project(a);
         // pins on the far side of the building (below the roof line) are hidden by it
-        const behind = !h.at && a[1] < s.H - 0.3 && Math.hypot(cp.x - a[0], cp.z - a[2]) > Math.hypot(cp.x - ctr.x, cp.z - ctr.z) + 1.5;
+        const behind = !h.at && !h.abs && a[1] < s.H - 0.3 && Math.hypot(cp.x - a[0], cp.z - a[2]) > Math.hypot(cp.x - ctr.x, cp.z - ctr.z) + 1.5;
         const inside = vis && x > 12 && x < W - 12 && y > 60 && y < Hh - 40;
         el.style.transform = `translate(${x}px, ${y}px)`;
         el.classList.toggle('off', !inside || behind);
@@ -325,13 +342,13 @@ export default function Showroom({ slug }) {
   useEffect(() => {
     if (!api.current) return;
     const tq = Math.abs(hour - (p.hour ?? 11)) > 0.01 ? String(Math.round(hour * 4) / 4) : null, dq = doy !== dayOfYear() ? String(doy) : null;
-    writeUrl({ view: mode !== 'unit' && !level && !extLevel && view !== 'facade' ? view : null, unit: mode === 'unit' ? unit : null, floor: flatLevels && mode !== 'exterior' && intLevel !== p.typical ? intLevel : null, pos: mode === 'unit' && flat && !(flat.sx === 1 && flat.sz === 1) ? `${flat.sx},${flat.sz}` : null, level: mode !== 'unit' ? level : null, storey: mode === 'exterior' ? extLevel : null, t: playing ? null : tq, d: dq });
-  }, [mode, view, unit, level, extLevel, hour, doy, playing, intLevel, flat]);
+    writeUrl({ view: mode !== 'unit' && mode !== 'ground' && !level && !extLevel && view !== 'facade' ? view : null, unit: mode === 'unit' ? unit : null, floor: flatLevels && mode !== 'exterior' && intLevel !== p.typical ? intLevel : null, pos: mode === 'unit' && flat && !(flat.sx === 1 && flat.sz === 1) ? `${flat.sx},${flat.sz}` : null, room: mode === 'unit' && flat ? room : null, walk: mode === 'ground' && stop != null ? groundStops[stop].id : null, level: mode !== 'unit' ? level : null, storey: mode === 'exterior' ? extLevel : null, t: playing ? null : tq, d: dq });
+  }, [mode, view, unit, level, extLevel, hour, doy, playing, intLevel, flat, room, stop]);
 
   function selectView(id, { instant = false } = {}) {
     const v = views.find((x) => x.id === id); if (!v) return;
     if (id === 'floor' && flatLevels) { selectFloorPlan(intLevel, { instant }); return; }
-    inside.current = false; setFlat(null); setRoom(null);
+    inside.current = false; setFlat(null); setRoom(null); setStop(null);
     setView(id); setMode(v.mode); setUnit(null); setLevel(null); setExtLevel(null); setOpen(null); setExplode(v.state.explode > 0);
     flyTo({ ...v.orbit, fit: v.fit }, { duration: instant ? 0 : 1.4 });
     stateTo({ ...v.state, unitAlpha: 0 }, { duration: instant ? 0.01 : 1.1 });
@@ -343,6 +360,7 @@ export default function Showroom({ slug }) {
     }
   }
   function selectMode(m) {
+    if (m === 'interior' && mode === 'ground') return;
     if (m === 'exterior') selectView(view !== 'floor' && views.find((v) => v.id === view)?.mode === 'exterior' ? view : 'facade');
     else selectView('floor');
   }
@@ -350,7 +368,7 @@ export default function Showroom({ slug }) {
   function selectFloorPlan(lv, { instant = false } = {}) {
     if (!api.current) return;
     inside.current = false;
-    setIntLevel(lv); setMode('interior'); setView('floor'); setUnit(null); setFlat(null); setRoom(null); setLevel(null); setExtLevel(null); setOpen(null); setExplode(false);
+    setIntLevel(lv); setMode('interior'); setView('floor'); setUnit(null); setFlat(null); setRoom(null); setStop(null); setLevel(null); setExtLevel(null); setOpen(null); setExplode(false);
     if (innerWidth <= 760) setSheet(null);
     flyTo(levelOrbit(p, lv), { duration: instant ? 0 : 1.3 });
     stateTo({ focus: lv, cut: 1, explode: 0, finish: 0, unitAlpha: 0, flats: 1, flatLevel: lv }, { duration: instant ? 0.01 : 1.0 });
@@ -361,10 +379,10 @@ export default function Showroom({ slug }) {
     return { ...o, tx: o.tx * f.sx, tz: o.tz * f.sz, ty: o.ty + yOf(lv) - typY, theta: Math.atan2(Math.sin(o.theta) * f.sz, Math.cos(o.theta) * f.sx) };
   }
   // open one flat: only now is its furnished interior loaded and shown
-  function selectFlat(f, lv = intLevel) {
+  function selectFlat(f, lv = intLevel, room0 = null) {
     const o = flatOrbit(f, lv); if (!o || !api.current) return;
     const at = { sx: f.sx, sz: f.sz, level: lv };
-    inside.current = false;
+    inside.current = false; setStop(null);
     setUnitMin(innerWidth <= 760);
     setIntLevel(lv); setUnit(f.type); setFlat(f); setRoom(null); setRooms(api.current.unitRooms(f.type)); setMode('unit'); setLevel(null); setExtLevel(null); setOpen(null); setSheet(null); setExplode(false); setUnitLoading(true);
     flyTo(o);
@@ -374,6 +392,7 @@ export default function Showroom({ slug }) {
       if (api.current?.state.unit !== f.type) return;
       setRooms(api.current.unitRooms(f.type));
       stateTo({ focus: lv, cut: 1, explode: 0, finish: 0, unitAlpha: 1, unit: f.type, unitAt: at }, { duration: 0.9 });
+      if (room0) pendingRoom.current = room0;   // deep link straight into a room, once its list is known
     });
   }
   tapFlat.current = (key) => { const f = flats.find((x) => x.key === key); if (f && mode === 'interior') selectFlat(f); };
@@ -384,19 +403,31 @@ export default function Showroom({ slug }) {
     const r = roomList.find((x) => x.key === key);
     setRoom(r ? key : null); setSpin(false); setPhoto(false);
     if (!r) { inside.current = false; flyTo(flatOrbit(flat, intLevel), { duration: 1.2 }); stateTo(base, { duration: 0.4 }); return; }
-    const x = r.c[0] * flat.sx, z = r.c[1] * flat.sz, y0 = yOf(intLevel);
+    const y0 = yOf(intLevel);
     if (r.walk) {
-      // look down the long side of the room first
-      const th = r.size[0] >= r.size[1] ? 0 : Math.PI / 2;
+      // stand on the free floor of the room, facing its furniture
+      const x = r.stand[0] * flat.sx, z = r.stand[1] * flat.sz, dx = r.look[0] * flat.sx, dz = r.look[1] * flat.sz;
+      const small = r.size[0] * r.size[1] < 5;
       inside.current = true;
-      flyTo({ tx: x, ty: y0 + 1.45, tz: z, theta: th, phi: 0.06, r: 0.05, fov: 74 }, { duration: 1.5 });
+      flyTo({ tx: x, ty: y0 + 1.5, tz: z, theta: Math.atan2(-dz, -dx), phi: small ? 0.2 : 0.07, r: 0.05, fov: small ? 82 : 76 }, { duration: 1.4 });
       stateTo({ ...base, inside: true }, { duration: 0.4 });
     } else {
+      const x = r.c[0] * flat.sx, z = r.c[1] * flat.sz;
       inside.current = false;
       flyTo({ tx: x, ty: y0 + 0.6, tz: z, theta: cam.current.theta, phi: 1.15, r: Math.max(r.size[0], r.size[1]) * 2.4 + 2.5, fov: 38 }, { duration: 1.2 });
       stateTo(base, { duration: 0.4 });
     }
   }
+  // the ground-floor walk: stand at one of its stops at eye level (look: compass heading, 0 = north, 90 = east)
+  function selectGround(i = 0, { instant = false } = {}) {
+    const g = groundStops?.[i]; if (!g || !api.current) return;
+    inside.current = true;
+    setStop(i); setMode('ground'); setView('entrance'); setUnit(null); setFlat(null); setRoom(null); setLevel(null); setExtLevel(null); setOpen(null); setSheet(null); setExplode(false); setSpin(false); setPhoto(false);
+    const a = ((g.look ?? 0) * Math.PI) / 180, dx = Math.sin(a), dz = -Math.cos(a);
+    flyTo({ tx: g.at[0], ty: p.levels[0][1] + 1.55, tz: g.at[1], theta: Math.atan2(-dz, -dx), phi: g.pitch ? (-g.pitch * Math.PI) / 180 : 0.03, r: 0.05, fov: 76 }, { duration: instant ? 0 : 1.6 });
+    stateTo({ focus: null, cut: 0, explode: 0, finish: 0, unitAlpha: 0 }, { duration: instant ? 0.01 : 0.6 });
+  }
+  useEffect(() => { if (pendingRoom.current && roomList.some((r) => r.key === pendingRoom.current)) { const k = pendingRoom.current; pendingRoom.current = null; selectRoom(k); } });
   function selectUnit(id) {
     if (flatLevels) { const f = flats.find((x) => x.type === id && x.sx === 1 && x.sz === 1) || flats.find((x) => x.type === id); if (f) { selectFlat(f); return; } }
     inside.current = false;
@@ -414,7 +445,7 @@ export default function Showroom({ slug }) {
   function selectLevel(lv) {
     if (!lv) { selectView('facade'); return; }
     if (flatLevels?.includes(lv)) { selectFloorPlan(lv); return; }
-    inside.current = false; setFlat(null); setRoom(null);
+    inside.current = false; setFlat(null); setRoom(null); setStop(null);
     const o = levelOrbit(p, lv);
     setLevel(lv); setExtLevel(null); setMode('exterior'); setUnit(null); setOpen(null); setSheet(null); setExplode(false); setView(null);
     flyTo(o);
@@ -423,7 +454,7 @@ export default function Showroom({ slug }) {
   // one storey from outside: the camera comes level with it, the storey is outlined on the facade
   function selectStorey(lv, { instant = false } = {}) {
     if (!lv) { selectView('facade'); return; }
-    inside.current = false; setFlat(null); setRoom(null);
+    inside.current = false; setFlat(null); setRoom(null); setStop(null);
     const o = facadeLevelOrbit(p, lv, cam.current?.theta);
     setExtLevel(lv); setLevel(null); setMode('exterior'); setUnit(null); setOpen(null); setExplode(false); setView(null);
     if (innerWidth <= 760) setSheet(null);
@@ -474,7 +505,7 @@ export default function Showroom({ slug }) {
   // ---------- walkthrough ----------
   const TIPS = [
     { sel: '.sr-stage', title: 'Turn it around', text: 'Drag to orbit the building. Pinch or scroll to zoom. Arrow keys work too.' },
-    { sel: '.sr-mode', title: 'Outside or in', text: flatLevels ? 'Interior shows the flats on each floor. Pick a flat to open it furnished, then step into its rooms.' : 'Switch between the exterior and the furnished cut-away of the typical floor.' },
+    { sel: '.sr-mode', title: 'Outside or in', text: flatLevels ? 'Interior shows the flats on each floor. Pick a flat to open it furnished, then walk from room to room. The Ground chip walks the stilt floor.' : 'Switch between the exterior and the furnished cut-away of the typical floor.' },
     { sel: '.sr-views', title: 'Jump to a view', text: 'Presets for the façade, aerial, stilt, terrace, the floor stack and the typical floor.' },
     { sel: '.sr-pin:not(.off)', title: 'Tap a pin', text: 'Pins open a card on that part of the building. Some take you to a closer view.' },
     { sel: '.sr-unitbtn', title: 'Pick a flat type', text: 'Open any flat type as a furnished 3D model with its rooms and carpet area.' },
@@ -510,6 +541,14 @@ export default function Showroom({ slug }) {
   useEffect(() => { if (!panoOf) setPano(false); }, [panoOf]);
 
   // ---------- render ----------
+  const levelLabel = (k) => (p.levels.find((l) => l[0] === k) || [])[2] || k;
+  // step-by-step navigation while standing somewhere: previous / next, and the way back out
+  const nav = (() => {
+    if (mode === 'ground' && stop != null && groundStops) return { kicker: 'Ground floor', list: groundStops.map((g, i) => ({ key: i, label: g.label })), i: stop, note: groundStops[stop].note, go: (k) => selectGround(k), exit: () => selectView('entrance'), exitLabel: 'End walk' };
+    if (mode === 'unit' && flat && room) { const i = roomList.findIndex((r) => r.key === room); if (i < 0) return null;
+      return { kicker: `Flat ${flat.type} · ${levelLabel(intLevel)}`, list: roomList.map((r) => ({ key: r.key, label: r.label })), i, note: roomList[i].walk ? 'Drag to look around' : 'Seen from above', go: (k) => selectRoom(k), exit: () => selectRoom(null), exitLabel: 'Whole flat' }; }
+    return null;
+  })();
   const curUnit = unit ? p.units.find((u) => u.id === unit) : null;
   const unitRow = curUnit && p.finish?.schedule?.rows.find((r) => r.flat === `Unit ${curUnit.id}` || r.flat === curUnit.id);
   const card = (() => {
@@ -520,7 +559,6 @@ export default function Showroom({ slug }) {
     if (fl) { const c = cardFor(p, fl); return { ...c, link: null, h: fl }; }
     return null;
   })();
-  const levelLabel = (k) => (p.levels.find((l) => l[0] === k) || [])[2] || k;
   const tipT = tip >= 0 ? TIPS[tip] : null;
   const tipStyle = (() => {
     if (!tipT) return null;
@@ -578,9 +616,9 @@ export default function Showroom({ slug }) {
 
       <div className="sr-pins" aria-label="Hotspots" style={photo && still ? { display: 'none' } : undefined}>
         {pins.map((h) => (
-          <button type="button" key={(mode === 'interior' ? 'f:' : 'e:') + h.id} ref={(n) => { pinsEl.current[h.id] = n; }}
-            className={`sr-pin off${open === h.id ? ' sel' : ''}${h.unit || h.flat ? ' flat' : ''}${h.flatRef ? ' type' : ''}`} onClick={() => (h.flatRef ? selectFlat(h.flatRef) : setOpen(open === h.id ? null : h.id))} aria-expanded={h.flatRef ? undefined : open === h.id}
-            style={h.flatRef ? { '--pin': h.flatRef.color } : undefined} title={h.flatRef ? `Open flat ${h.flatRef.type}, ${h.flatRef.side}` : undefined}>
+          <button type="button" key={(h.abs ? 'g:' : mode === 'interior' ? 'f:' : 'e:') + h.id} ref={(n) => { pinsEl.current[h.id] = n; }}
+            className={`sr-pin off${open === h.id ? ' sel' : ''}${h.unit || h.flat ? ' flat' : ''}${h.flatRef ? ' type' : ''}${h.abs ? ' go' : ''}`} onClick={() => (h.abs ? nav?.go(h.go) : h.flatRef ? selectFlat(h.flatRef) : setOpen(open === h.id ? null : h.id))} aria-expanded={h.flatRef || h.abs ? undefined : open === h.id}
+            style={h.flatRef ? { '--pin': h.flatRef.color } : undefined} title={h.abs ? `Go to ${h.label}` : h.flatRef ? `Open flat ${h.flatRef.type}, ${h.flatRef.side}` : undefined}>
             <i>{h.flatRef ? h.label : null}</i>{!h.flatRef && <span>{h.label}</span>}
           </button>
         ))}
@@ -609,6 +647,7 @@ export default function Showroom({ slug }) {
           <ul className="st"><li><b>{curUnit.carpet}</b>{p.slug === 'mansouza' ? 'sum of rooms (modelled)' : 'carpet (modelled)'}</li><li><b>{levelLabel(flat ? intLevel : p.typical).replace(' floor', '')}</b>{flat ? `floor · ${flat.side}` : 'floor shown'}</li></ul>
           <ul className="ln">{curUnit.rooms.split(' · ').map((l) => <li key={l}>{l}</li>)}</ul>
           <p className="fine">{p.slug === 'mansouza' ? 'Furniture placed by room type: no furniture drawing was supplied.' : 'Furnished from the architect’s furniture and electrical drawing.'}{unitLoading ? ' Loading the furnished model…' : ''}</p>
+          {flat && roomList.length > 0 && <button type="button" className="go pri" onClick={() => selectRoom(roomList[0].key)}>Walk through the rooms →</button>}
           <button type="button" className="go" onClick={() => selectView('floor')}>← All flats on the {flat ? levelLabel(intLevel).toLowerCase() : 'floor'}</button>
         </aside>
       )}
@@ -616,6 +655,7 @@ export default function Showroom({ slug }) {
       {flatLevels && mode === 'interior' && (
         <div className="sr-sub" aria-label="Flats by floor">
           <div className="row" role="tablist" aria-label="Floor">
+            {groundStops && <button type="button" role="tab" aria-selected={false} onClick={() => selectGround(0)}><b>Ground</b><small>walk-through</small></button>}
             {flatLevels.map((k) => (
               <button type="button" role="tab" key={k} aria-selected={intLevel === k} className={intLevel === k ? 'on' : ''} onClick={() => selectFloorPlan(k)}>
                 <b>{levelLabel(k).replace(' floor', '')}</b><small>{flats.length} flats</small>
@@ -640,9 +680,28 @@ export default function Showroom({ slug }) {
               <button type="button" role="tab" key={r.key} aria-selected={room === r.key} className={room === r.key ? 'on' : ''} onClick={() => selectRoom(r.key)}><b>{r.label}</b></button>
             ))}
           </div>
-          {room && <p>{roomList.find((r) => r.key === room)?.walk ? 'Inside the room · drag to look around' : 'Seen from above'}</p>}
         </div>
       )}
+      {mode === 'ground' && stop != null && groundStops && (
+        <div className="sr-sub rooms" aria-label="Stops of the ground-floor walk">
+          <div className="row" role="tablist" aria-label="Stop">
+            {groundStops.map((g, i) => (
+              <button type="button" role="tab" key={g.id} aria-selected={stop === i} className={stop === i ? 'on' : ''} onClick={() => selectGround(i)}><b>{g.label}</b></button>
+            ))}
+          </div>
+        </div>
+      )}
+      {mode === 'exterior' && view === 'entrance' && groundStops && !level && !extLevel && !photo && (
+        <div className="sr-badge sr-walkcta"><button type="button" className="txt" onClick={() => selectGround(0)}>Walk the ground floor →</button></div>
+      )}
+      {nav && (() => { const n = nav.list.length, prev = nav.list[(nav.i - 1 + n) % n], next = nav.list[(nav.i + 1) % n]; return (
+        <div className="sr-walk" role="group" aria-label="Step from place to place">
+          <button type="button" className="step" onClick={() => nav.go(prev.key)} aria-label={`Back to ${prev.label}`}><Icon d={IC.back} /><span>{prev.label}</span></button>
+          <div className="cur" aria-live="polite"><small>{nav.kicker} · {nav.i + 1} of {n}</small><b>{nav.list[nav.i].label}</b>{nav.note && <em>{nav.note}</em>}</div>
+          <button type="button" className="step next" onClick={() => nav.go(next.key)} aria-label={`On to ${next.label}`}><span>{next.label}</span><Icon d={IC.back} /></button>
+          <button type="button" className="out" onClick={nav.exit}>{nav.exitLabel}</button>
+        </div>
+      ); })()}
       {furnishing && mode === 'interior' && <div className="sr-badge">Furnishing the flats…</div>}
       {extLevel && (
         <div className="sr-badge sr-storey">

@@ -181,8 +181,16 @@ showroom runs its own persistent orbit) and the tour's camera keyframes (`lib/to
   legend). The picked flat's unit model is then placed at that floor and mirror position (`state.unitAt`), and a strip
   of room chips (read from the model's `Floor_<id>_<kind>` plates, `stage.unitRooms`) puts the camera inside a room at
   eye level with the ceiling back on (`state.inside`; drag looks around, zoom changes the field of view); rooms too
-  small to stand in are shown from above. Share links carry `&floor=` and `&pos=sx,sz`. `project.cars: false` hides
-  the stilt cars and the indicative road cars
+  small to stand in are shown from above. Share links carry `&floor=`, `&pos=sx,sz` and `&room=<key>`.
+  `project.cars: false` hides the stilt cars and the indicative road cars
+- room to room: the standing point of a room is the spot of its floor plate farthest from the walls and the furniture
+  (`standPoint` in `lib/projectStage.js`: 15 cm grid, furniture by the bounding box of each named piece), facing the
+  furniture. While standing somewhere a bar gives previous / next / the way out (`.sr-walk`), and signposts
+  (`.sr-pin.go`) mark the four nearest other places; both come from one `nav` list in `components/Showroom.jsx`. The
+  unit models carry a `Lobby` node (a stub of the lift lobby beyond the main door) that is shown only from inside
+- ground-floor walk (`project.groundTour`, Krishna Kaveri): eye-level stops on the stilt taken from the labels of the
+  stilt floor plan (`at: [x, z]`, `look` = compass heading, optional `pitch` up), reached from "Walk the ground floor"
+  on the stilt preset or the Ground chip of the floor strip; same bar and signposts; share link `?walk=<stop id>`
 - the clock (`components/SunClock.jsx`): 24-hour dial (drag the sun), slider, presets (sunrise, morning, noon, golden
   hour, dusk, night, now), season (today, equinoxes, solstices) and a time-lapse of the day
 - a seven-step first-visit walkthrough (remembered in localStorage), an info sheet listing what the model does not have
