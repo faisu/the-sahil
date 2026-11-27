@@ -175,6 +175,14 @@ showroom runs its own persistent orbit) and the tour's camera keyframes (`lib/to
   preset (`hero_<view>_<day|dusk|night>.webp`, picked from the sun's height) or of the flat's living room
   (`unit_<X>_living.webp`); touching the model returns to live. The 360° button opens the flat's panorama
   (`unit_<X>_pano.webp`, `components/PanoView.jsx`; `pano.heading` is the starting direction in degrees)
+- flats by floor (`project.flatLevels`, Krishna Kaveri): Interior shows a floor with its flats as plain coloured
+  blocks, one colour per type (`lib/flatColors.js`; blocks are the unit `outline`s mirrored by `finish.copies`), with a
+  chip per floor giving its flat count. Nothing furnished is loaded until a flat is picked (block, lettered pin or
+  legend). The picked flat's unit model is then placed at that floor and mirror position (`state.unitAt`), and a strip
+  of room chips (read from the model's `Floor_<id>_<kind>` plates, `stage.unitRooms`) puts the camera inside a room at
+  eye level with the ceiling back on (`state.inside`; drag looks around, zoom changes the field of view); rooms too
+  small to stand in are shown from above. Share links carry `&floor=` and `&pos=sx,sz`. `project.cars: false` hides
+  the stilt cars and the indicative road cars
 - the clock (`components/SunClock.jsx`): 24-hour dial (drag the sun), slider, presets (sunrise, morning, noon, golden
   hour, dusk, night, now), season (today, equinoxes, solstices) and a time-lapse of the day
 - a seven-step first-visit walkthrough (remembered in localStorage), an info sheet listing what the model does not have

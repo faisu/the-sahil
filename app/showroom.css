@@ -226,3 +226,25 @@
   .sr-toast{top:122px}
 }
 @media (max-width:760px){.sr-card,.sr-sheet{bottom:calc(10px + env(safe-area-inset-bottom))}}
+
+/* flats by floor and rooms of a flat: a strip of chips under the header */
+.sr-sub{position:absolute;z-index:15;left:50%;top:74px;transform:translateX(-50%);max-width:min(760px,calc(100% - 200px));display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.sr-sub .row{pointer-events:auto;display:flex;gap:4px;max-width:100%;overflow-x:auto;scrollbar-width:none;padding:4px;border-radius:14px;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--hair)}
+.sr-sub .row::-webkit-scrollbar{display:none}
+.sr .sr-sub .row button{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:.42rem .85rem;border-radius:10px;color:var(--sub);white-space:nowrap}
+.sr-sub .row button b{font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.sr-sub .row button small{font-size:.56rem;letter-spacing:.06em;opacity:.85}
+.sr .sr-sub .row button.on{background:var(--accent);color:#fff}
+.sr .sr-sub .legend button{flex-direction:row;gap:.45rem;font-size:.64rem;color:var(--txt);padding:.34rem .7rem .34rem .4rem}
+.sr-sub .legend i{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;font-style:normal;font-size:.62rem;font-weight:700;color:#fff}
+.sr-sub p{margin:0;padding:.3rem .8rem;border-radius:999px;background:var(--glass-2);font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.sr-pin.type i{display:grid;place-items:center;width:30px;height:30px;margin:-2px 0 0 -2px;border-radius:9px;background:var(--pin,var(--accent));color:#fff;font-style:normal;font-weight:700;font-size:.8rem;border:2px solid #fff;animation:none}
+.sr-pin.type i::before,.sr-pin.type i::after{display:none}
+.sr-pin.type:hover i{transform:scale(1.12)}
+@media (max-width:760px){
+  .sr-sub{top:112px;max-width:calc(100% - 16px);gap:4px}
+  .sr .sr-sub .row button{padding:.4rem .7rem}
+  .sr-sub .legend button small{display:none}
+  .sr-sub p{font-size:.5rem}
+}
+@media (min-width:761px){.sr-sub.rooms{left:calc(16px + env(safe-area-inset-left));transform:none;align-items:flex-start;max-width:calc(100% - 500px)}}
