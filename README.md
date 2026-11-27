@@ -182,7 +182,7 @@ showroom runs its own persistent orbit) and the tour's camera keyframes (`lib/to
   of room chips (read from the model's `Floor_<id>_<kind>` plates, `stage.unitRooms`) puts the camera inside a room at
   eye level with the ceiling back on (`state.inside`; drag looks around, zoom changes the field of view); rooms too
   small to stand in are shown from above. Share links carry `&floor=`, `&pos=sx,sz` and `&room=<key>`.
-  `project.cars: false` hides the stilt cars and the indicative road cars
+  `project.cars: false` hides the stilt cars and the indicative road cars; `'stilt'` keeps the parked cars of the stilt plan and drops only the road cars
 - room to room: the standing point of a room is the spot of its floor plate farthest from the walls and the furniture
   (`standPoint` in `lib/projectStage.js`: 15 cm grid, furniture by the bounding box of each named piece), facing the
   furniture. While standing somewhere a bar gives previous / next / the way out (`.sr-walk`), and signposts
